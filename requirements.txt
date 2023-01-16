@@ -1,0 +1,4 @@
+torch < 2
+torchvision < 1
+Pillow>=8.4.0, < 10
+torchmetrics < 1
