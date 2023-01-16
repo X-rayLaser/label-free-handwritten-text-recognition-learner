@@ -7,7 +7,8 @@ from loss_functions import MaskedCrossEntropy
 from torch.nn import CrossEntropyLoss
 
 from formatters import Formatter
-from models import ImageEncoder, AttendingDecoder, build_encoder, build_decoder
+from models import ImageEncoder, AttendingDecoder
+from preprocessors import CharacterTokenizer
 
 EpochLog = namedtuple('EpochLog', 'epoch metrics')
 
@@ -283,14 +284,19 @@ class Trainer:
 
 
 if __name__ == '__main__':
-    encoder = ImageEncoder()
-    decoder = AttendingDecoder()
+    encoder = ImageEncoder(image_height=64, hidden_size=128)
 
-    encoder_optimizer = Adam(0.0001, encoder.parameters())
-    decoder_optimizer = Adam(0.0001, decoder.parameters())
+    context_size = encoder.hidden_size * 2
+    decoder_hidden_size = encoder.hidden_size
+
+    tokenizer = CharacterTokenizer()
+    sos_token = tokenizer.char2index[tokenizer.start]
+    decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
+                               hidden_size=decoder_hidden_size)
+
+    encoder_optimizer = Adam(encoder.parameters(), lr=0.0001)
+    decoder_optimizer = Adam(decoder.parameters(), 0.0001)
     neural_pipeline = TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
-    image_preprocessor = None
-    tokenizer = None
     input_adapter = None
     output_adapter = None
     recognizer = WordRecognitionPipeline(neural_pipeline, image_preprocessor, tokenizer, input_adapter, output_adapter)
