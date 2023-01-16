@@ -3,12 +3,10 @@ from collections import namedtuple
 
 import torch
 from torch.optim import Adam
-from loss_functions import MaskedCrossEntropy
-from torch.nn import CrossEntropyLoss
-
-from formatters import Formatter
-from models import ImageEncoder, AttendingDecoder
-from preprocessors import CharacterTokenizer
+from hwr_self_train.loss_functions import MaskedCrossEntropy
+from hwr_self_train.formatters import Formatter
+from hwr_self_train.models import ImageEncoder, AttendingDecoder
+from hwr_self_train.preprocessors import CharacterTokenizer
 
 EpochLog = namedtuple('EpochLog', 'epoch metrics')
 
@@ -18,7 +16,7 @@ class WordRecognitionPipeline:
     inference_mode = 2
     debug_mode = 3
 
-    def __init__(self, neural_pipeline, image_preprocessor, tokenizer,
+    def __init__(self, neural_pipeline, tokenizer,
                  input_adapter, output_adapter, mode=None):
         self.neural_pipeline = neural_pipeline
         self.mode = mode or self.training_mode
@@ -168,7 +166,7 @@ class TrainingLoop:
                 running_metrics = calculator(iteration_log)
                 self.print_metrics(epoch, iteration_log, running_metrics)
 
-            yield EpochLog(1, {})
+            yield epoch
 
     def print_metrics(self, epoch, iteration_log, running_metrics):
         stats = self.formatter(
@@ -299,7 +297,7 @@ if __name__ == '__main__':
     neural_pipeline = TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
     input_adapter = None
     output_adapter = None
-    recognizer = WordRecognitionPipeline(neural_pipeline, image_preprocessor, tokenizer, input_adapter, output_adapter)
+    recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, input_adapter, output_adapter)
 
     criterion = MaskedCrossEntropy(reduction='sum', label_smoothing=0.6)
     transform_pad = None
@@ -308,7 +306,11 @@ if __name__ == '__main__':
     trainer = Trainer(recognizer, data_loader, loss_fn, tokenizer)
 
     training_loop = TrainingLoop(trainer, metric_fns=[], epochs=100)
-    for epoch_log in training_loop:
+    from hwr_self_train.history_saver import HistoryCsvSaver
+    history_saver = HistoryCsvSaver("history.csv")
+    for epoch in training_loop:
         # todo: calculate metrics and show them; save them to csv file; save session
-        print(epoch_log)
+        metrics = {}
+        history_saver.add_entry(epoch, metrics)
+
     print("Done")
