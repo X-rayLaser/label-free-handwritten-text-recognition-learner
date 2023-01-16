@@ -1,15 +1,27 @@
 import argparse
 
+import torch
 from torch.optim import Adam
+from torch.utils.data import DataLoader
 
 from hwr_self_train.loss_functions import MaskedCrossEntropy
 from hwr_self_train.models import ImageEncoder, AttendingDecoder
 from hwr_self_train.preprocessors import CharacterTokenizer
 from hwr_self_train.history_saver import HistoryCsvSaver
-from hwr_self_train.evaluation import evaluate
+from hwr_self_train.evaluation import evaluate, EvaluationTask
 from hwr_self_train.metrics import Metric
 from hwr_self_train.training import TrainableEncoderDecoder, WordRecognitionPipeline, Trainer, \
     TrainingLoop, print_metrics
+from hwr_self_train.utils import pad_sequences
+from hwr_self_train.datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
+
+
+def pad_targets(*args):
+    *y_hat, ground_true = args
+    filler = ground_true[0][-1]
+    seqs, mask = pad_sequences(ground_true, filler)
+    target = torch.LongTensor(seqs)
+    return y_hat + [target] + [mask]
 
 
 if __name__ == '__main__':
@@ -30,14 +42,21 @@ if __name__ == '__main__':
     recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer)
 
     criterion = MaskedCrossEntropy(reduction='sum', label_smoothing=0.6)
-    transform_pad = None
-    loss_fn = Metric('loss', metric_fn=criterion, metric_args=["y_hat", "y"], transform_fn=transform_pad)
-    data_loader = None
-    trainer = Trainer(recognizer, data_loader, loss_fn, tokenizer)
+
+    loss_fn = Metric('loss', metric_fn=criterion, metric_args=["y_hat", "y"], transform_fn=pad_targets)
+
+    training_ds = SyntheticOnlineDataset('./fonts', 100, image_height=64)
+
+    val_ds = SyntheticOnlineDatasetCached('./fonts', 100, image_height=64)
+
+    training_loader = DataLoader(training_ds, batch_size=8, num_workers=2)
+    val_loader = DataLoader(val_ds, batch_size=8, num_workers=2)
+    trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
     training_loop = TrainingLoop(trainer, metric_fns=[], epochs=100)
 
     history_saver = HistoryCsvSaver("history.csv")
+    task = EvaluationTask(recognizer, training_loader, metric_functions)
     for epoch in training_loop:
         # todo: calculate metrics and show them; save them to csv file; save session
         metrics = evaluate()

@@ -3,6 +3,7 @@ import torch
 from collections import namedtuple
 from .metrics import MovingAverage, update_running_metrics
 from .formatters import ProgressBar
+from .utils import make_tf_batch
 
 
 def evaluate(task, num_batches=1.0, supress_errors=True):
@@ -37,17 +38,19 @@ def evaluate(task, num_batches=1.0, supress_errors=True):
     progress_bar = ProgressBar()
 
     with torch.no_grad():
-        for i, graph_inputs in enumerate(data_generator):
+        for i, (images, transcripts) in enumerate(data_generator):
             if i >= num_batches:
                 break
 
             try:
-                results_batch = recognizer(*graph_inputs)
+                y_hat = recognizer(images)
             except torch.cuda.OutOfMemoryError:
                 if not supress_errors:
                     raise
                 continue
-            update_running_metrics(moving_averages, metrics, results_batch)
+
+            d = dict(y=transcripts, y_hat=y_hat)
+            update_running_metrics(moving_averages, metrics, d)
 
             step_number = i + 1
             progress = progress_bar.updated(step_number, num_batches, cols=50)
@@ -56,4 +59,4 @@ def evaluate(task, num_batches=1.0, supress_errors=True):
     return {metric_name: avg.value for metric_name, avg in moving_averages.items()}
 
 
-EvaluationTask = namedtuple('EvaluationTask', 'recognizer', 'data_loader', 'metric_functions')
+EvaluationTask = namedtuple('EvaluationTask', ['recognizer', 'data_loader', 'metric_functions'])

@@ -2,8 +2,38 @@ import torch
 from torchvision import transforms
 
 
-def pad_transcripts(token_list, filler):
-    return token_list, token_list
+class Mask:
+    def __init__(self, lengths, max_length):
+        self.mask = torch.zeros(len(lengths), max_length, dtype=torch.bool)
+        self.lengths = lengths
+
+        for i, length in enumerate(lengths):
+            self.mask[i, :length] = True
+
+    @property
+    def device(self):
+        return self.mask.device
+
+    def to(self, device):
+        self.mask = self.mask.to(device)
+        return self
+
+
+def add_padding(seq, size, filler):
+    seq = list(seq)
+    while len(seq) < size:
+        seq.append(filler)
+    return seq
+
+
+def pad_sequences(seqs, filler):
+    lengths = [len(seq) for seq in seqs]
+    max_length = max(lengths)
+
+    mask = Mask(lengths, max_length)
+
+    padded = [add_padding(seq, max_length, filler) for seq in seqs]
+    return padded, mask
 
 
 def prepare_tf_seqs(transcripts, tokenizer):
@@ -74,6 +104,6 @@ def one_sided_padding(max_length, length):
     return 0, len_diff
 
 
-def make_targets_batch(transcripts, tokenizer):
+def make_tf_batch(transcripts, tokenizer):
     transcripts = prepare_tf_seqs(transcripts, tokenizer)
-    return pad_transcripts(transcripts, tokenizer.end_of_word)
+    return pad_sequences(transcripts, tokenizer.end_of_word)

@@ -1,7 +1,7 @@
 import torch
 from hwr_self_train.formatters import Formatter
-from hwr_self_train.utils import pad_transcripts, prepare_targets, \
-    make_targets_batch, ImageBatchPreprocessor
+from hwr_self_train.utils import pad_sequences, prepare_targets, \
+    make_tf_batch, ImageBatchPreprocessor
 
 from hwr_self_train.metrics import MetricsSetCalculator
 
@@ -18,7 +18,7 @@ class WordRecognitionPipeline:
         image_batch = batch_preprocessor(images)
 
         if transcripts is not None:
-            transcripts, _ = make_targets_batch(transcripts, self.tokenizer)
+            transcripts, _ = make_tf_batch(transcripts, self.tokenizer)
 
         if self.show_attention:
             return self.neural_pipeline.debug_attention(image_batch)
@@ -138,14 +138,14 @@ class Trainer:
                 continue
 
             outputs = result
-            targets = result
+            targets = transcripts
             # todo: fix this (may get rid of inputs and targets)
             yield IterationLogEntry(i, num_iterations, inputs, outputs, targets, loss)
 
     def train_one_iteration(self, images, transcripts):
         y_hat = self.recognizer(images, transcripts)
         ground_true = prepare_targets(transcripts, self.tokenizer)
-        padded_targets, mask = pad_transcripts(ground_true, filler=self.tokenizer.end_of_word)
+        padded_targets, mask = pad_sequences(ground_true, filler=self.tokenizer.end_of_word)
         loss = self.loss_fn(y_hat, ground_true, mask)
 
         # invoke zero_grad for each neural network
