@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torchvision.models import vgg19_bn
+from .preprocessors import CharacterTokenizer
 
 
 class VGG19Truncated(nn.Module):
@@ -262,3 +263,16 @@ def build_decoder(session):
     sos_token = tokenizer.char2index[tokenizer.start]
     return AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
                             hidden_size=decoder_hidden_size)
+
+
+def build_networks(image_height=64, hidden_size=128):
+    encoder = ImageEncoder(image_height, hidden_size)
+
+    context_size = encoder.hidden_size * 2
+    decoder_hidden_size = encoder.hidden_size
+
+    tokenizer = CharacterTokenizer()
+    sos_token = tokenizer.char2index[tokenizer.start]
+    decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
+                               hidden_size=decoder_hidden_size)
+    return encoder, decoder
