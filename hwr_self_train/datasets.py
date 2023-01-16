@@ -1,11 +1,11 @@
 import os
 from PIL import Image
-
+from torch.utils.data import Dataset
 from torchvision.transforms import Resize
 from .data_generator import SimpleRandomWordGenerator
 
 
-class SyntheticOnlineDataset:
+class SyntheticOnlineDataset(Dataset):
     def __init__(self, fonts_dir, size, image_height=64):
         self.size = size
         self.fonts_dir = fonts_dir

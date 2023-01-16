@@ -3,6 +3,7 @@ import argparse
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
+from torchmetrics import CharErrorRate
 
 from hwr_self_train.loss_functions import MaskedCrossEntropy
 from hwr_self_train.models import ImageEncoder, AttendingDecoder
@@ -45,6 +46,26 @@ if __name__ == '__main__':
 
     loss_fn = Metric('loss', metric_fn=criterion, metric_args=["y_hat", "y"], transform_fn=pad_targets)
 
+    val_loss_fn = Metric('val loss', metric_fn=criterion, metric_args=["y_hat", "y"], transform_fn=pad_targets)
+
+    def decode(y_hat, y):
+        return y_hat, y
+
+    cer = CharErrorRate()
+
+    cer_metric = Metric('CER', metric_fn=cer, metric_args=["y_hat", "y"], transform_fn=decode)
+
+    val_cer = CharErrorRate()
+
+    val_cer_metric = Metric('CER', metric_fn=val_cer, metric_args=["y_hat", "y"], transform_fn=decode)
+
+    metric_functions = {
+        'loss': loss_fn,
+        'val loss': val_loss_fn,
+        'CER': cer_metric,
+        'val CER': val_cer_metric
+    }
+
     training_ds = SyntheticOnlineDataset('./fonts', 100, image_height=64)
 
     val_ds = SyntheticOnlineDatasetCached('./fonts', 100, image_height=64)
@@ -58,8 +79,7 @@ if __name__ == '__main__':
     history_saver = HistoryCsvSaver("history.csv")
     task = EvaluationTask(recognizer, training_loader, metric_functions)
     for epoch in training_loop:
-        # todo: calculate metrics and show them; save them to csv file; save session
-        metrics = evaluate()
+        metrics = evaluate(task,)
         print_metrics(metrics, epoch)
         history_saver.add_entry(epoch, metrics)
 
