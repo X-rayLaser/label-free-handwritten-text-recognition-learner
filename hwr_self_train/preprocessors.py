@@ -119,3 +119,18 @@ class DecodeCharacterString:
             actual_texts.append(tokenizer.decode_to_string(true_tokens, clean_output=True))
 
         return predicted_texts, actual_texts
+
+
+def decode_output_batch(tensor, tokenizer):
+    """Convert tensor of predictions into a list of strings.
+
+    :param tensor: tensor of shape (batch_size, max_steps, num_classes) containing
+    raw (unnormalized) scores representing how likely is a given character at a given step
+
+    :param tokenizer: instance of CharacterTokenizer class
+    :return: textual transcripts extracted using predictions tensor
+    """
+
+    y_hat = tensor.argmax(dim=2).tolist()
+    return [tokenizer.decode_to_string(token_list, clean_output=True)
+            for token_list in y_hat]

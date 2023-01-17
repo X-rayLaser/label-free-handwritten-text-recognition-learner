@@ -6,13 +6,12 @@ from .data_generator import SimpleRandomWordGenerator
 
 
 class SyntheticOnlineDataset(Dataset):
-    def __init__(self, fonts_dir, size, image_height=64):
+    def __init__(self, fonts_dir, size, dict_file, image_height=64):
         self.size = size
         self.fonts_dir = fonts_dir
         self.image_height = image_height
 
-        dictionary = os.path.join("examples/htr_self_training/words.txt")
-        simple_generator = SimpleRandomWordGenerator(dictionary, self.fonts_dir,
+        simple_generator = SimpleRandomWordGenerator(dict_file, self.fonts_dir,
                                                      bg_range=(255, 255),
                                                      color_range=(0, 100),
                                                      font_size_range=(50, 100), rotation_range=(0, 0))
@@ -34,8 +33,8 @@ class SyntheticOnlineDataset(Dataset):
 
 
 class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
-    def __init__(self, fonts_dir, size, image_height=64):
-        super().__init__(fonts_dir, size, image_height)
+    def __init__(self, fonts_dir, size, dict_file, image_height=64):
+        super().__init__(fonts_dir, size, dict_file, image_height)
 
         self.cache = {}
 

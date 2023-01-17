@@ -2,6 +2,38 @@ import torch
 from torchvision import transforms
 
 
+class LossTargetTransform:
+    """Transform function (callable) invoked by Metric instance wrapping loss function.
+
+    It takes 2 arguments: predictions and transcripts.
+    Prediction is PyTorch tensor of shape (batch_size, max_steps, num_classes)
+    containing raw unnormalized probabilities of different classes.
+    Transcripts is a list of corresponding transcripts for each prediction in a batch.
+    Each transcript is a Python string (str).
+
+    The callable converts all transcripts into token sequences, pads them and
+    wraps in PyTorch LongTensor class. It also creates a mask which is
+    another PyTorch 2d Tensor which specifies the original (unpadded) length
+    of each token sequence.
+
+    The callable keeps predictions tensor unchanged.
+
+    It returns 3-tuple (prediction, targets, mask)
+    """
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def __call__(self, *args):
+        y_hat, transcripts = args
+
+        tokens = prepare_targets(transcripts, self.tokenizer)
+
+        filler = tokens[0][-1]
+        seqs, mask = pad_sequences(tokens, filler)
+        target = torch.LongTensor(seqs)
+        return [y_hat] + [target] + [mask]
+
+
 class Mask:
     def __init__(self, lengths, max_length):
         self.mask = torch.zeros(len(lengths), max_length, dtype=torch.bool)
@@ -68,6 +100,7 @@ class ImageBatchPreprocessor:
         to_tensor = transforms.ToTensor()
         #normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
+        images = self.pad_images(images)
         tensors = [self.to_rgb(to_tensor(im)) for im in images]
         return torch.stack(tensors)
 
@@ -105,5 +138,47 @@ def one_sided_padding(max_length, length):
 
 
 def make_tf_batch(transcripts, tokenizer):
+    """Convert raw transcripts into tensor used by decoder network for teacher forcing"""
     transcripts = prepare_tf_seqs(transcripts, tokenizer)
-    return pad_sequences(transcripts, tokenizer.end_of_word)
+    filler = tokenizer._encode(tokenizer.end)
+    padded, mask = pad_sequences(transcripts, filler)
+    tf_batch = one_hot_tensor(padded, tokenizer.charset_size)
+    return tf_batch, mask
+
+
+def one_hot_tensor(classes, num_classes):
+    """Form a 1-hot tensor from a list of class sequences
+
+    :param classes: list of class sequences (list of lists)
+    :param num_classes: total number of available classes
+    :return: torch.tensor of shape (batch_size, max_seq_len, num_classes)
+    :raise ValueError: if there is any class value that is negative or >= num_classes
+    """
+
+    if not hasattr(one_hot_tensor, 'eye'):
+        one_hot_tensor.eye = {}
+
+    if num_classes not in one_hot_tensor.eye:
+        one_hot_tensor.eye[num_classes] = torch.eye(num_classes, dtype=torch.float32)
+    eye = one_hot_tensor.eye[num_classes]
+    try:
+        tensors = [eye[class_seq] for class_seq in classes]
+    except IndexError:
+        msg = f'Every class must be a non-negative number less than num_classes={num_classes}. ' \
+              f'Got classes {classes}'
+        raise ValueError(msg)
+
+    return torch.stack(tensors)
+
+
+def collate(batch):
+    """Split batch into a tuple of lists"""
+
+    num_vars = len(batch[0])
+    res = [[] for _ in range(num_vars)]
+
+    for example in batch:
+        for i, inp in enumerate(example):
+            res[i].append(inp)
+
+    return res

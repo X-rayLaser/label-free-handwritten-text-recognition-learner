@@ -121,12 +121,9 @@ class Trainer:
         self.tokenizer = tokenizer
         self.supress_errors = supress_errors
 
-        # calls train() on every model object in the graph
-        self.recognizer.train_mode()
-
     def __iter__(self):
         num_iterations = len(self.data_loader)
-        self.recognizer.train_mode()
+        self.recognizer.neural_pipeline.train_mode()
 
         inputs = []
         for i, (images, transcripts) in enumerate(self.data_loader):
@@ -144,9 +141,7 @@ class Trainer:
 
     def train_one_iteration(self, images, transcripts):
         y_hat = self.recognizer(images, transcripts)
-        ground_true = prepare_targets(transcripts, self.tokenizer)
-        padded_targets, mask = pad_sequences(ground_true, filler=self.tokenizer.end_of_word)
-        loss = self.loss_fn(y_hat, ground_true, mask)
+        loss = self.loss_fn(y_hat=y_hat, y=transcripts)
 
         # invoke zero_grad for each neural network
         self.recognizer.neural_pipeline.zero_grad()

@@ -3,11 +3,10 @@ import torch
 from collections import namedtuple
 from .metrics import MovingAverage, update_running_metrics
 from .formatters import ProgressBar
-from .utils import make_tf_batch
 
 
-def evaluate(task, num_batches=1.0, supress_errors=True):
-    """Compute metrics specified for this pipeline.
+def evaluate(task, supress_errors=True):
+    """Compute metrics.
 
     :param task: instance of EvaluationTask
     :param num_batches: Number of batches used to compute metrics on.
@@ -23,6 +22,8 @@ def evaluate(task, num_batches=1.0, supress_errors=True):
     recognizer.neural_graph.eval_mode()
 
     data_generator = task.data_loader
+
+    num_batches = task.num_batches
 
     if isinstance(num_batches, float):
         fraction = num_batches
@@ -59,4 +60,5 @@ def evaluate(task, num_batches=1.0, supress_errors=True):
     return {metric_name: avg.value for metric_name, avg in moving_averages.items()}
 
 
-EvaluationTask = namedtuple('EvaluationTask', ['recognizer', 'data_loader', 'metric_functions'])
+EvaluationTask = namedtuple('EvaluationTask',
+                            ['recognizer', 'data_loader', 'metric_functions', 'num_batches'])

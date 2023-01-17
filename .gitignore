@@ -2,4 +2,5 @@
 \.python-version
 \.idea/
 venv/
+fonts/
 words.txt

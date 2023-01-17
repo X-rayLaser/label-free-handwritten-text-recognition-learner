@@ -39,7 +39,7 @@ class ImageEncoder(nn.Module):
 
         x, hidden = self.gru2(x)
 
-        return x, hidden
+        return x
 
     def run_inference(self, x):
         return self.forward(x)
@@ -188,11 +188,11 @@ class AttendingDecoder(nn.Module):
             outputs.append(log_pmf)
 
         y_hat = torch.stack(outputs, dim=1)
-        return [y_hat]
+        return y_hat
 
     def close_loop_inference(self, encodings, decoder_hidden, sos):
         outputs, _ = self._do_inference(encodings, decoder_hidden, sos)
-        return [outputs]
+        return outputs
 
     def debug_attention(self, encodings):
         decoder_hidden = torch.zeros(1, len(encodings), self.hidden_size, device=encodings.device)

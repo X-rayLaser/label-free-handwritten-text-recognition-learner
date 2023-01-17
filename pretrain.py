@@ -7,22 +7,20 @@ from torchmetrics import CharErrorRate
 
 from hwr_self_train.loss_functions import MaskedCrossEntropy
 from hwr_self_train.models import ImageEncoder, AttendingDecoder
-from hwr_self_train.preprocessors import CharacterTokenizer
+from hwr_self_train.preprocessors import CharacterTokenizer, decode_output_batch
 from hwr_self_train.history_saver import HistoryCsvSaver
 from hwr_self_train.evaluation import evaluate, EvaluationTask
 from hwr_self_train.metrics import Metric
 from hwr_self_train.training import TrainableEncoderDecoder, WordRecognitionPipeline, Trainer, \
     TrainingLoop, print_metrics
-from hwr_self_train.utils import pad_sequences
+from hwr_self_train.utils import LossTargetTransform, collate
 from hwr_self_train.datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
 
 
-def pad_targets(*args):
-    *y_hat, ground_true = args
-    filler = ground_true[0][-1]
-    seqs, mask = pad_sequences(ground_true, filler)
-    target = torch.LongTensor(seqs)
-    return y_hat + [target] + [mask]
+def create_metric(name, metric_fn, transform_fn):
+    return Metric(
+        name, metric_fn=metric_fn, metric_args=["y_hat", "y"], transform_fn=transform_fn
+    )
 
 
 if __name__ == '__main__':
@@ -37,52 +35,62 @@ if __name__ == '__main__':
                                hidden_size=decoder_hidden_size)
 
     encoder_optimizer = Adam(encoder.parameters(), lr=0.0001)
-    decoder_optimizer = Adam(decoder.parameters(), 0.0001)
+    decoder_optimizer = Adam(decoder.parameters(), lr=0.0001)
     neural_pipeline = TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
 
     recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer)
 
     criterion = MaskedCrossEntropy(reduction='sum', label_smoothing=0.6)
+    val_criterion = MaskedCrossEntropy(reduction='sum', label_smoothing=0.6)
 
-    loss_fn = Metric('loss', metric_fn=criterion, metric_args=["y_hat", "y"], transform_fn=pad_targets)
+    loss_transform = LossTargetTransform(tokenizer)
 
-    val_loss_fn = Metric('val loss', metric_fn=criterion, metric_args=["y_hat", "y"], transform_fn=pad_targets)
+    loss_fn = create_metric('loss', criterion, loss_transform)
+    val_loss_fn = create_metric('val loss', val_criterion, loss_transform)
 
     def decode(y_hat, y):
+        y_hat = decode_output_batch(y_hat, tokenizer)
         return y_hat, y
 
     cer = CharErrorRate()
-
-    cer_metric = Metric('CER', metric_fn=cer, metric_args=["y_hat", "y"], transform_fn=decode)
+    cer_metric = create_metric('CER', cer, decode)
 
     val_cer = CharErrorRate()
+    val_cer_metric = create_metric('val CER', val_cer, decode)
 
-    val_cer_metric = Metric('CER', metric_fn=val_cer, metric_args=["y_hat", "y"], transform_fn=decode)
-
-    metric_functions = {
+    train_metric_fns = {
         'loss': loss_fn,
+        'CER': cer_metric
+    }
+
+    val_metric_fns = {
         'val loss': val_loss_fn,
-        'CER': cer_metric,
         'val CER': val_cer_metric
     }
 
-    training_ds = SyntheticOnlineDataset('./fonts', 100, image_height=64)
+    training_ds = SyntheticOnlineDataset(
+        './fonts', 100, dict_file='words.txt', image_height=64
+    )
 
-    val_ds = SyntheticOnlineDatasetCached('./fonts', 100, image_height=64)
+    val_ds = SyntheticOnlineDatasetCached(
+        './fonts', 100, dict_file='words.txt', image_height=64
+    )
 
-    training_loader = DataLoader(training_ds, batch_size=8, num_workers=2)
-    val_loader = DataLoader(val_ds, batch_size=8, num_workers=2)
+    training_loader = DataLoader(training_ds, batch_size=8, num_workers=2, collate_fn=collate)
+    val_loader = DataLoader(val_ds, batch_size=8, num_workers=2, collate_fn=collate)
     trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
-    training_loop = TrainingLoop(trainer, metric_fns=[], epochs=100)
+    training_loop = TrainingLoop(trainer, metric_fns=train_metric_fns, epochs=100)
 
     history_saver = HistoryCsvSaver("history.csv")
 
-    # pass num_batches here
-    # task for different loader or metric functions
-    task = EvaluationTask(recognizer, training_loader, metric_functions)
+    eval_on_train = EvaluationTask(recognizer, training_loader, train_metric_fns, 0.1)
+    eval_on_eval = EvaluationTask(recognizer, val_loader, val_metric_fns, 1.0)
+
     for epoch in training_loop:
-        metrics = evaluate(task)
+        metrics = evaluate(eval_on_train)
+        metrics.update(evaluate(eval_on_eval))
+
         print_metrics(metrics, epoch)
         history_saver.add_entry(epoch, metrics)
 
