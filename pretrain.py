@@ -26,7 +26,7 @@ def pad_targets(*args):
 
 
 if __name__ == '__main__':
-    encoder = ImageEncoder(image_height=64, hidden_size=128)
+    encoder = ImageEncoder(image_height=64, hidden_size=32)
 
     context_size = encoder.hidden_size * 2
     decoder_hidden_size = encoder.hidden_size
@@ -77,9 +77,12 @@ if __name__ == '__main__':
     training_loop = TrainingLoop(trainer, metric_fns=[], epochs=100)
 
     history_saver = HistoryCsvSaver("history.csv")
+
+    # pass num_batches here
+    # task for different loader or metric functions
     task = EvaluationTask(recognizer, training_loader, metric_functions)
     for epoch in training_loop:
-        metrics = evaluate(task,)
+        metrics = evaluate(task)
         print_metrics(metrics, epoch)
         history_saver.add_entry(epoch, metrics)
 
