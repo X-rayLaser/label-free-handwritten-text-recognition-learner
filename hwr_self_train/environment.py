@@ -52,7 +52,7 @@ def load_or_create_neural_pipeline():
 
 class Environment:
     def __init__(self):
-        self.make_checkpoints_dir()
+        self._make_checkpoints_dir()
 
         self.neural_pipeline = load_or_create_neural_pipeline()
 
@@ -64,11 +64,11 @@ class Environment:
 
         val_metric_fns = prepare_metrics(Configuration.validation_metrics)
 
-        training_loader = self.create_data_loader(SyntheticOnlineDataset,
-                                                  Configuration.training_set_size)
+        training_loader = self._create_data_loader(SyntheticOnlineDataset,
+                                                   Configuration.training_set_size)
 
-        val_loader = self.create_data_loader(SyntheticOnlineDatasetCached,
-                                             Configuration.validation_set_size)
+        val_loader = self._create_data_loader(SyntheticOnlineDatasetCached,
+                                              Configuration.validation_set_size)
 
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
@@ -84,10 +84,14 @@ class Environment:
 
         self.eval_tasks = [eval_on_train, eval_on_val]
 
-    def make_checkpoints_dir(self):
+    def save_checkpoint(self):
+        save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
+        save_checkpoint(self.neural_pipeline, save_dir, Configuration.device)
+
+    def _make_checkpoints_dir(self):
         os.makedirs(Configuration.checkpoints_save_dir, exist_ok=True)
 
-    def create_data_loader(self, dataset_class, dataset_size):
+    def _create_data_loader(self, dataset_class, dataset_size):
         ds = dataset_class(
             Configuration.fonts_dir, dataset_size,
             dict_file=Configuration.dictionary_file, image_height=Configuration.image_height
