@@ -4,12 +4,22 @@ import os
 import torch
 
 
+def clean_metrics(metrics):
+    res = {}
+    for name, value in metrics.items():
+        if hasattr(value, 'item'):
+            value = value.item()
+        res[name] = value
+
+    return res
+
+
 def save_checkpoint(trainable, save_dir, device, epoch, metrics):
-    os.makedirs(save_dir)
     checkpoint_path = os.path.join(save_dir, 'checkpoint.pt')
-    meta_path = os.path.join(save_dir, 'meta.txt')
+    meta_path = os.path.join(save_dir, 'metadata.txt')
 
     with open(meta_path, 'w', encoding='utf-8') as f:
+        metrics = clean_metrics(metrics)
         meta_data = {
             'device': str(device),
             'epoch': epoch,
@@ -17,7 +27,7 @@ def save_checkpoint(trainable, save_dir, device, epoch, metrics):
         }
         f.write(json.dumps(meta_data))
 
-    models_dict = dict(encoder=trainable.encoder.state_dict(), decoder=trainable.decoder.state_dict)
+    models_dict = dict(encoder=trainable.encoder.state_dict(), decoder=trainable.decoder.state_dict())
 
     optimizers_dict = {
         'encoder_optimizer': trainable.encoder_optimizer.state_dict(),
@@ -31,7 +41,7 @@ def save_checkpoint(trainable, save_dir, device, epoch, metrics):
 
 
 def get_checkpoint_meta(checkpoint_dir):
-    meta_path = os.path.join(checkpoint_dir, 'meta.txt')
+    meta_path = os.path.join(checkpoint_dir, 'metadata.txt')
     with open(meta_path, encoding='utf-8') as f:
         return json.loads(f.read())
 
@@ -44,7 +54,7 @@ def get_latest_meta_data(checkpoints_dir):
 
 def load_checkpoint(trainable, checkpoint_dir, device):
     state_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
-    meta_path = os.path.join(checkpoint_dir, 'meta.txt')
+    meta_path = os.path.join(checkpoint_dir, 'metadata.txt')
 
     with open(meta_path, encoding='utf-8') as f:
         d = json.loads(f.read())
@@ -68,10 +78,10 @@ def load_checkpoint(trainable, checkpoint_dir, device):
 def make_new_checkpoint(base_dir):
     try:
         highest = get_highest_checkpoint_number(base_dir)
+        checkpoint_name = str(highest + 1)
     except CheckpointsNotFound:
-        highest = 0
+        checkpoint_name = '0'
 
-    checkpoint_name = str(highest + 1)
     checkpoint_path = os.path.join(base_dir, checkpoint_name)
     os.makedirs(checkpoint_path)
     return checkpoint_path

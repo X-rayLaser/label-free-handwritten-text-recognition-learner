@@ -15,14 +15,16 @@ def print_metrics(computed_metrics, epoch):
 
 
 class TrainingLoop:
-    def __init__(self, trainer, metric_fns, epochs):
+    def __init__(self, trainer, metric_fns, epochs, starting_epoch):
         self.trainer = trainer
-        self.epochs = epochs
         self.metric_fns = metric_fns
         self.formatter = Formatter()
 
+        self.epochs = epochs
+        self.starting_epoch = starting_epoch
+
     def __iter__(self):
-        for epoch in range(self.epochs):
+        for epoch in range(self.starting_epoch, self.epochs + 1):
             calculator = MetricsSetCalculator(self.metric_fns, interval=100)
 
             for iteration_log in self.trainer:

@@ -19,7 +19,7 @@ def evaluate(task, supress_errors=True):
     recognizer = task.recognizer
     metrics = task.metric_functions
 
-    recognizer.neural_graph.eval_mode()
+    recognizer.neural_pipeline.eval_mode()
 
     data_generator = task.data_loader
 
@@ -44,7 +44,7 @@ def evaluate(task, supress_errors=True):
                 break
 
             try:
-                y_hat = recognizer(images)
+                y_hat = recognizer(images, transcripts)
             except torch.cuda.OutOfMemoryError:
                 if not supress_errors:
                     raise

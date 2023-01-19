@@ -66,7 +66,7 @@ class Configuration:
     history_path = 'pretrain_history.csv'
 
     evaluation_steps = {
-        'training_set': 0.1,
+        'training_set': 1.0,
         'validation_set': 1.0
     }
     epochs = 5
@@ -94,8 +94,7 @@ def prepare_loss(loss_conf):
 
 def prepare_metrics(metrics_conf):
     metric_fns = {}
-    for spec in metrics_conf:
-        name = spec['name']
+    for name, spec in metrics_conf.items():
         metric_class = spec['class']
         metric_args = spec.get('args', [])
         metric_kwargs = spec.get('kwargs', {})

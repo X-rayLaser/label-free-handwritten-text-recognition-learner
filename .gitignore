@@ -3,4 +3,6 @@
 \.idea/
 venv/
 fonts/
+checkpoints/
+pretrain_history.csv
 words.txt

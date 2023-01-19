@@ -42,9 +42,10 @@ def load_or_create_neural_pipeline():
     neural_pipeline = create_neural_pipeline(Configuration.device)
 
     try:
-        return load_latest_checkpoint(neural_pipeline,
-                                      Configuration.checkpoints_save_dir,
-                                      Configuration.device)
+        load_latest_checkpoint(neural_pipeline,
+                               Configuration.checkpoints_save_dir,
+                               Configuration.device)
+        return neural_pipeline
     except CheckpointsNotFound:
         save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
         save_checkpoint(neural_pipeline, save_dir, Configuration.device, 0, metrics={})
@@ -74,9 +75,10 @@ class Environment:
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
         self.epochs_trained = self.get_trained_epochs()
-        remaining_epochs = Configuration.epochs - self.epochs_trained
+
         self.training_loop = TrainingLoop(trainer, metric_fns=train_metric_fns,
-                                          epochs=remaining_epochs)
+                                          epochs=Configuration.epochs,
+                                          starting_epoch=self.epochs_trained + 1)
 
         self.history_saver = HistoryCsvSaver(Configuration.history_path)
 

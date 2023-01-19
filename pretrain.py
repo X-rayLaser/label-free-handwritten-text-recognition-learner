@@ -7,8 +7,7 @@ if __name__ == '__main__':
     env = Environment()
     training_loop = env.training_loop
 
-    for i in training_loop:
-        epoch = env.epochs_trained + i + 1
+    for epoch in training_loop:
         metrics = {}
         for task in env.eval_tasks:
             metrics.update(evaluate(task))

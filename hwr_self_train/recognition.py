@@ -35,7 +35,7 @@ class EncoderDecoder:
 
     def predict(self, image_batch, transcripts=None):
         image_batch = image_batch.to(self.device)
-        if transcripts:
+        if transcripts is not None:
             transcripts = transcripts.to(self.device)
 
         encodings = self.encoder(image_batch)
