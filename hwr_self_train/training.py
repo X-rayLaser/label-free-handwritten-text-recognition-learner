@@ -27,15 +27,21 @@ class WordRecognitionPipeline:
 
 
 class EncoderDecoder:
-    def __init__(self, encoder, decoder):
+    def __init__(self, encoder, decoder, device):
         self.encoder = encoder
         self.decoder = decoder
+        self.device = device
 
     def debug_attention(self, image_batch):
+        image_batch = image_batch.to(self.device)
         encodings = self.encoder(image_batch)
         return self.decoder.debug_attention(encodings)
 
     def predict(self, image_batch, transcripts=None):
+        image_batch = image_batch.to(self.device)
+        if transcripts:
+            transcripts = transcripts.to(self.device)
+
         encodings = self.encoder(image_batch)
         return self.decoder(encodings, transcripts)
 
@@ -44,8 +50,8 @@ class EncoderDecoder:
 
 
 class TrainableEncoderDecoder(EncoderDecoder):
-    def __init__(self, encoder, decoder, encoder_optimizer, decoder_optimizer):
-        super().__init__(encoder, decoder)
+    def __init__(self, encoder, decoder, device, encoder_optimizer, decoder_optimizer):
+        super().__init__(encoder, decoder, device)
 
         self.encoder_optimizer = encoder_optimizer
         self.decoder_optimizer = decoder_optimizer

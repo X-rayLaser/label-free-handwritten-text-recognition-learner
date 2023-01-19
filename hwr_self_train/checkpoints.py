@@ -53,5 +53,5 @@ def load_checkpoint(checkpoint_dir, device):
     encoder_optimizer.load_state_dict(checkpoint['optimizers']['encoder_optimizer'])
     decoder_optimizer.load_state_dict(checkpoint['optimizers']['decoder_optimizer'])
 
-    trainable = TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
+    trainable = TrainableEncoderDecoder(encoder, decoder, device, encoder_optimizer, decoder_optimizer)
     return trainable

@@ -61,7 +61,7 @@ class CheckpointsNotFound(Exception):
     """Raised when trying to load a checkpoint from a folder containing none of them"""
 
 
-def create_neural_pipeline(tokenizer):
+def create_neural_pipeline(tokenizer, device):
     encoder = ImageEncoder(image_height=64, hidden_size=32)
 
     context_size = encoder.hidden_size * 2
@@ -73,7 +73,7 @@ def create_neural_pipeline(tokenizer):
 
     encoder_optimizer = Adam(encoder.parameters(), lr=0.0001)
     decoder_optimizer = Adam(decoder.parameters(), lr=0.0001)
-    return TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
+    return TrainableEncoderDecoder(encoder, decoder, device, encoder_optimizer, decoder_optimizer)
 
 
 if __name__ == '__main__':
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     try:
         neural_pipeline = load_latest_checkpoint(save_base_dir, device)
     except CheckpointsNotFound:
-        neural_pipeline = create_neural_pipeline(tokenizer)
+        neural_pipeline = create_neural_pipeline(tokenizer, device)
 
     recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer)
 
