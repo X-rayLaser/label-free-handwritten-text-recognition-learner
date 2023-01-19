@@ -47,6 +47,10 @@ def load_or_create_neural_pipeline():
                                Configuration.device)
         return neural_pipeline
     except CheckpointsNotFound:
+        # since checkpoints do not exist, assume that we start from scratch,
+        # therefore we remove existing history file
+        if os.path.isfile(Configuration.history_path):
+            os.remove(Configuration.history_path)
         save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
         save_checkpoint(neural_pipeline, save_dir, Configuration.device, 0, metrics={})
         return neural_pipeline
