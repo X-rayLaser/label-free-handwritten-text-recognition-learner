@@ -1,18 +1,21 @@
+import json
 import os
+
 import torch
-from torch.optim import Adam
-
-from .models import build_networks
-from .training import TrainableEncoderDecoder
 
 
-def save_checkpoint(trainable, save_dir, device):
+def save_checkpoint(trainable, save_dir, device, epoch, metrics):
     os.makedirs(save_dir)
     checkpoint_path = os.path.join(save_dir, 'checkpoint.pt')
-    device_path = os.path.join(save_dir, 'device.txt')
+    meta_path = os.path.join(save_dir, 'meta.txt')
 
-    with open(device_path, 'w', encoding='utf-8') as f:
-        f.write(str(device))
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        meta_data = {
+            'device': str(device),
+            'epoch': epoch,
+            'metrics': metrics
+        }
+        f.write(json.dumps(meta_data))
 
     models_dict = dict(encoder=trainable.encoder.state_dict(), decoder=trainable.decoder.state_dict)
 
@@ -27,12 +30,25 @@ def save_checkpoint(trainable, save_dir, device):
     }, checkpoint_path)
 
 
+def get_checkpoint_meta(checkpoint_dir):
+    meta_path = os.path.join(checkpoint_dir, 'meta.txt')
+    with open(meta_path, encoding='utf-8') as f:
+        return json.loads(f.read())
+
+
+def get_latest_meta_data(checkpoints_dir):
+    highest = get_highest_checkpoint_number(checkpoints_dir)
+    meta_path = os.path.join(checkpoints_dir, str(highest))
+    return get_checkpoint_meta(meta_path)
+
+
 def load_checkpoint(trainable, checkpoint_dir, device):
     state_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
-    device_path = os.path.join(checkpoint_dir, 'device.txt')
+    meta_path = os.path.join(checkpoint_dir, 'meta.txt')
 
-    with open(device_path, encoding='utf-8') as f:
-        checkpoint_device = torch.device(f.read())
+    with open(meta_path, encoding='utf-8') as f:
+        d = json.loads(f.read())
+        checkpoint_device = torch.device(d["device"])
 
     if checkpoint_device == device:
         checkpoint = torch.load(state_path)

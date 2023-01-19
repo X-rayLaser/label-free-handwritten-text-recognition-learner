@@ -7,6 +7,7 @@ from .models import ImageEncoder, AttendingDecoder
 from .recognition import WordRecognitionPipeline, TrainableEncoderDecoder
 from .datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
 from .checkpoints import (
+    get_latest_meta_data,
     load_latest_checkpoint,
     make_new_checkpoint,
     save_checkpoint,
@@ -46,7 +47,7 @@ def load_or_create_neural_pipeline():
                                       Configuration.device)
     except CheckpointsNotFound:
         save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
-        save_checkpoint(neural_pipeline, save_dir, Configuration.device)
+        save_checkpoint(neural_pipeline, save_dir, Configuration.device, 0, metrics={})
         return neural_pipeline
 
 
@@ -72,8 +73,10 @@ class Environment:
 
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
+        self.epochs_trained = self.get_trained_epochs()
+        remaining_epochs = Configuration.epochs - self.epochs_trained
         self.training_loop = TrainingLoop(trainer, metric_fns=train_metric_fns,
-                                          epochs=Configuration.epochs)
+                                          epochs=remaining_epochs)
 
         self.history_saver = HistoryCsvSaver(Configuration.history_path)
 
@@ -84,9 +87,16 @@ class Environment:
 
         self.eval_tasks = [eval_on_train, eval_on_val]
 
-    def save_checkpoint(self):
+    def get_trained_epochs(self):
+        try:
+            meta_data = get_latest_meta_data(Configuration.checkpoints_save_dir)
+            return meta_data["epoch"]
+        except CheckpointsNotFound:
+            return 0
+
+    def save_checkpoint(self, epoch, metrics):
         save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
-        save_checkpoint(self.neural_pipeline, save_dir, Configuration.device)
+        save_checkpoint(self.neural_pipeline, save_dir, Configuration.device, epoch, metrics)
 
     def _make_checkpoints_dir(self):
         os.makedirs(Configuration.checkpoints_save_dir, exist_ok=True)
