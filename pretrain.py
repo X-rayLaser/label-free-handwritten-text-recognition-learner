@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import torch
 from torch.optim import Adam
@@ -15,6 +16,7 @@ from hwr_self_train.training import TrainableEncoderDecoder, WordRecognitionPipe
     TrainingLoop, print_metrics
 from hwr_self_train.utils import LossTargetTransform, collate
 from hwr_self_train.datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
+from hwr_self_train.checkpoints import save_checkpoint, load_checkpoint
 
 
 def create_metric(name, metric_fn, transform_fn):
@@ -23,20 +25,68 @@ def create_metric(name, metric_fn, transform_fn):
     )
 
 
-if __name__ == '__main__':
+def make_new_checkpoint(base_dir):
+    try:
+        highest = get_highest_checkpoint_number(base_dir)
+    except CheckpointsNotFound:
+        highest = 0
+
+    checkpoint_name = str(highest + 1)
+    checkpoint_path = os.path.join(base_dir, checkpoint_name)
+    os.makedirs(checkpoint_path)
+    return checkpoint_path
+
+
+def load_latest_checkpoint(checkpoints_dir, device):
+    highest = get_highest_checkpoint_number(checkpoints_dir)
+    highest_dir = os.path.join(checkpoints_dir, str(highest))
+    return load_checkpoint(highest_dir, device)
+
+
+def get_highest_checkpoint_number(checkpoints_dir):
+    checkpoints = []
+    for folder in os.listdir(checkpoints_dir):
+        try:
+            checkpoints.append(int(folder))
+        except ValueError:
+            pass
+
+    if not checkpoints:
+        raise CheckpointsNotFound()
+
+    return max(checkpoints)
+
+
+class CheckpointsNotFound(Exception):
+    """Raised when trying to load a checkpoint from a folder containing none of them"""
+
+
+def create_neural_pipeline(tokenizer):
     encoder = ImageEncoder(image_height=64, hidden_size=32)
 
     context_size = encoder.hidden_size * 2
     decoder_hidden_size = encoder.hidden_size
 
-    tokenizer = CharacterTokenizer()
     sos_token = tokenizer.char2index[tokenizer.start]
     decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
                                hidden_size=decoder_hidden_size)
 
     encoder_optimizer = Adam(encoder.parameters(), lr=0.0001)
     decoder_optimizer = Adam(decoder.parameters(), lr=0.0001)
-    neural_pipeline = TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
+    return TrainableEncoderDecoder(encoder, decoder, encoder_optimizer, decoder_optimizer)
+
+
+if __name__ == '__main__':
+    save_base_dir = 'checkpoints'
+    device = torch.device('cpu')
+    os.makedirs(save_base_dir, exist_ok=True)
+
+    tokenizer = CharacterTokenizer()
+
+    try:
+        neural_pipeline = load_latest_checkpoint(save_base_dir, device)
+    except CheckpointsNotFound:
+        neural_pipeline = create_neural_pipeline(tokenizer)
 
     recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer)
 
@@ -94,4 +144,6 @@ if __name__ == '__main__':
         print_metrics(metrics, epoch)
         history_saver.add_entry(epoch, metrics)
 
+        save_dir = make_new_checkpoint(save_base_dir)
+        save_checkpoint(recognizer.neural_pipeline, save_dir, device)
     print("Done")
