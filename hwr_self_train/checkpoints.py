@@ -27,12 +27,7 @@ def save_checkpoint(trainable, save_dir, device):
     }, checkpoint_path)
 
 
-def load_checkpoint(checkpoint_dir, device):
-    encoder, decoder = build_networks()
-
-    encoder_optimizer = Adam(encoder.parameters(), lr=0.0001)
-    decoder_optimizer = Adam(decoder.parameters(), 0.0001)
-
+def load_checkpoint(trainable, checkpoint_dir, device):
     state_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
     device_path = os.path.join(checkpoint_dir, 'device.txt')
 
@@ -44,14 +39,47 @@ def load_checkpoint(checkpoint_dir, device):
     else:
         checkpoint = torch.load(state_path, map_location=device)
 
-    encoder.load_state_dict(checkpoint['models']['encoder'])
-    encoder.to(device)
+    trainable.encoder.load_state_dict(checkpoint['models']['encoder'])
+    trainable.encoder.to(device)
 
-    decoder.load_state_dict(checkpoint['models']['decoder'])
-    decoder.to(device)
+    trainable.decoder.load_state_dict(checkpoint['models']['decoder'])
+    trainable.decoder.to(device)
 
-    encoder_optimizer.load_state_dict(checkpoint['optimizers']['encoder_optimizer'])
-    decoder_optimizer.load_state_dict(checkpoint['optimizers']['decoder_optimizer'])
+    trainable.encoder_optimizer.load_state_dict(checkpoint['optimizers']['encoder_optimizer'])
+    trainable.decoder_optimizer.load_state_dict(checkpoint['optimizers']['decoder_optimizer'])
 
-    trainable = TrainableEncoderDecoder(encoder, decoder, device, encoder_optimizer, decoder_optimizer)
-    return trainable
+
+def make_new_checkpoint(base_dir):
+    try:
+        highest = get_highest_checkpoint_number(base_dir)
+    except CheckpointsNotFound:
+        highest = 0
+
+    checkpoint_name = str(highest + 1)
+    checkpoint_path = os.path.join(base_dir, checkpoint_name)
+    os.makedirs(checkpoint_path)
+    return checkpoint_path
+
+
+def load_latest_checkpoint(trainable, checkpoints_dir, device):
+    highest = get_highest_checkpoint_number(checkpoints_dir)
+    highest_dir = os.path.join(checkpoints_dir, str(highest))
+    return load_checkpoint(trainable, highest_dir, device)
+
+
+def get_highest_checkpoint_number(checkpoints_dir):
+    checkpoints = []
+    for folder in os.listdir(checkpoints_dir):
+        try:
+            checkpoints.append(int(folder))
+        except ValueError:
+            pass
+
+    if not checkpoints:
+        raise CheckpointsNotFound()
+
+    return max(checkpoints)
+
+
+class CheckpointsNotFound(Exception):
+    """Raised when trying to load a checkpoint from a folder containing none of them"""

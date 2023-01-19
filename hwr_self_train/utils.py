@@ -2,38 +2,6 @@ import torch
 from torchvision import transforms
 
 
-class LossTargetTransform:
-    """Transform function (callable) invoked by Metric instance wrapping loss function.
-
-    It takes 2 arguments: predictions and transcripts.
-    Prediction is PyTorch tensor of shape (batch_size, max_steps, num_classes)
-    containing raw unnormalized probabilities of different classes.
-    Transcripts is a list of corresponding transcripts for each prediction in a batch.
-    Each transcript is a Python string (str).
-
-    The callable converts all transcripts into token sequences, pads them and
-    wraps in PyTorch LongTensor class. It also creates a mask which is
-    another PyTorch 2d Tensor which specifies the original (unpadded) length
-    of each token sequence.
-
-    The callable keeps predictions tensor unchanged.
-
-    It returns 3-tuple (prediction, targets, mask)
-    """
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
-
-    def __call__(self, *args):
-        y_hat, transcripts = args
-
-        tokens = prepare_targets(transcripts, self.tokenizer)
-
-        filler = tokens[0][-1]
-        seqs, mask = pad_sequences(tokens, filler)
-        target = torch.LongTensor(seqs)
-        return [y_hat] + [target] + [mask]
-
-
 class Mask:
     def __init__(self, lengths, max_length):
         self.mask = torch.zeros(len(lengths), max_length, dtype=torch.bool)
