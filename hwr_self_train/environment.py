@@ -7,10 +7,7 @@ from .models import ImageEncoder, AttendingDecoder
 from .recognition import WordRecognitionPipeline, TrainableEncoderDecoder
 from .datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
 from .checkpoints import (
-    get_latest_meta_data,
-    load_latest_checkpoint,
-    make_new_checkpoint,
-    save_checkpoint,
+    CheckpointKeeper,
     CheckpointsNotFound
 )
 from .training import TrainingLoop, Trainer
@@ -40,19 +37,18 @@ def create_neural_pipeline(device):
 
 def load_or_create_neural_pipeline():
     neural_pipeline = create_neural_pipeline(Configuration.device)
+    keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
 
     try:
-        load_latest_checkpoint(neural_pipeline,
-                               Configuration.checkpoints_save_dir,
-                               Configuration.device)
+        keeper.load_latest_checkpoint(neural_pipeline, Configuration.device)
         return neural_pipeline
     except CheckpointsNotFound:
         # since checkpoints do not exist, assume that we start from scratch,
         # therefore we remove existing history file
         if os.path.isfile(Configuration.history_path):
             os.remove(Configuration.history_path)
-        save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
-        save_checkpoint(neural_pipeline, save_dir, Configuration.device, 0, metrics={})
+
+        keeper.make_new_checkpoint(neural_pipeline, Configuration.device, 0, metrics={})
         return neural_pipeline
 
 
@@ -78,7 +74,7 @@ class Environment:
 
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
-        self.epochs_trained = self.get_trained_epochs()
+        self.epochs_trained = self._get_trained_epochs()
 
         self.training_loop = TrainingLoop(trainer, metric_fns=train_metric_fns,
                                           epochs=Configuration.epochs,
@@ -93,16 +89,17 @@ class Environment:
 
         self.eval_tasks = [eval_on_train, eval_on_val]
 
-    def get_trained_epochs(self):
+    def save_checkpoint(self, epoch, metrics):
+        keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+        keeper.make_new_checkpoint(self.neural_pipeline, Configuration.device, epoch, metrics)
+
+    def _get_trained_epochs(self):
         try:
-            meta_data = get_latest_meta_data(Configuration.checkpoints_save_dir)
+            keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+            meta_data = keeper.get_latest_meta_data()
             return meta_data["epoch"]
         except CheckpointsNotFound:
             return 0
-
-    def save_checkpoint(self, epoch, metrics):
-        save_dir = make_new_checkpoint(Configuration.checkpoints_save_dir)
-        save_checkpoint(self.neural_pipeline, save_dir, Configuration.device, epoch, metrics)
 
     def _make_checkpoints_dir(self):
         os.makedirs(Configuration.checkpoints_save_dir, exist_ok=True)

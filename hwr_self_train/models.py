@@ -200,7 +200,7 @@ class AttendingDecoder(nn.Module):
         sos[:, self.sos_token] = 1
         return self._do_inference(encodings, decoder_hidden, sos)
 
-    def _do_inference(self, encodings, decoder_hidden, sos):
+    def _do_inference(self, encodings, decoder_hidden, sos, max_steps=15):
         """Generates sequence of tokens in autoregressive way
         Returns both predicted sequence of tokens and list of attention weight tensors,
         one tensor for each predicted token
@@ -218,7 +218,7 @@ class AttendingDecoder(nn.Module):
         )
 
         attention_per_step = [attention_weights]
-        for t in range(20):
+        for t in range(max_steps):
             scores, decoder_hidden, attention_weights = self.predict_next(
                 decoder_hidden, encodings, attention_weights, y_hat_prev
             )

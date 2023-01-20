@@ -14,97 +14,134 @@ def clean_metrics(metrics):
     return res
 
 
-def save_checkpoint(trainable, save_dir, device, epoch, metrics):
-    checkpoint_path = os.path.join(save_dir, 'checkpoint.pt')
-    meta_path = os.path.join(save_dir, 'metadata.txt')
+class CheckpointKeeper:
+    def __init__(self, checkpoints_dir):
+        self.checkpoints_dir = checkpoints_dir
 
-    with open(meta_path, 'w', encoding='utf-8') as f:
-        metrics = clean_metrics(metrics)
-        meta_data = {
-            'device': str(device),
-            'epoch': epoch,
-            'metrics': metrics
-        }
-        f.write(json.dumps(meta_data))
+    def get_latest_meta_data(self):
+        highest = self._get_highest_checkpoint_number()
+        checkpoint_folder = os.path.join(self.checkpoints_dir, str(highest))
+        return Checkpoint(checkpoint_folder).meta_data
 
-    models_dict = dict(encoder=trainable.encoder.state_dict(), decoder=trainable.decoder.state_dict())
+    def load_latest_checkpoint(self, trainable, device):
+        highest = self._get_highest_checkpoint_number()
+        highest_dir = os.path.join(self.checkpoints_dir, str(highest))
+        return self.load_checkpoint(trainable, highest_dir, device)
 
-    optimizers_dict = {
-        'encoder_optimizer': trainable.encoder_optimizer.state_dict(),
-        'decoder_optimizer': trainable.decoder_optimizer.state_dict()
-    }
+    def load_checkpoint(self, trainable, checkpoint_dir, device):
+        checkpoint = Checkpoint(checkpoint_dir)
 
-    torch.save({
-        'models': models_dict,
-        'optimizers': optimizers_dict
-    }, checkpoint_path)
+        session_state = checkpoint.get_session_state(device)
 
+        trainable.encoder.load_state_dict(session_state.encoder)
+        trainable.encoder.to(device)
 
-def get_checkpoint_meta(checkpoint_dir):
-    meta_path = os.path.join(checkpoint_dir, 'metadata.txt')
-    with open(meta_path, encoding='utf-8') as f:
-        return json.loads(f.read())
+        trainable.decoder.load_state_dict(session_state.decoder)
+        trainable.decoder.to(device)
 
+        trainable.encoder_optimizer.load_state_dict(session_state.encoder_optimizer)
+        trainable.decoder_optimizer.load_state_dict(session_state.decoder_optimizer)
 
-def get_latest_meta_data(checkpoints_dir):
-    highest = get_highest_checkpoint_number(checkpoints_dir)
-    meta_path = os.path.join(checkpoints_dir, str(highest))
-    return get_checkpoint_meta(meta_path)
-
-
-def load_checkpoint(trainable, checkpoint_dir, device):
-    state_path = os.path.join(checkpoint_dir, 'checkpoint.pt')
-    meta_path = os.path.join(checkpoint_dir, 'metadata.txt')
-
-    with open(meta_path, encoding='utf-8') as f:
-        d = json.loads(f.read())
-        checkpoint_device = torch.device(d["device"])
-
-    if checkpoint_device == device:
-        checkpoint = torch.load(state_path)
-    else:
-        checkpoint = torch.load(state_path, map_location=device)
-
-    trainable.encoder.load_state_dict(checkpoint['models']['encoder'])
-    trainable.encoder.to(device)
-
-    trainable.decoder.load_state_dict(checkpoint['models']['decoder'])
-    trainable.decoder.to(device)
-
-    trainable.encoder_optimizer.load_state_dict(checkpoint['optimizers']['encoder_optimizer'])
-    trainable.decoder_optimizer.load_state_dict(checkpoint['optimizers']['decoder_optimizer'])
-
-
-def make_new_checkpoint(base_dir):
-    try:
-        highest = get_highest_checkpoint_number(base_dir)
-        checkpoint_name = str(highest + 1)
-    except CheckpointsNotFound:
-        checkpoint_name = '0'
-
-    checkpoint_path = os.path.join(base_dir, checkpoint_name)
-    os.makedirs(checkpoint_path)
-    return checkpoint_path
-
-
-def load_latest_checkpoint(trainable, checkpoints_dir, device):
-    highest = get_highest_checkpoint_number(checkpoints_dir)
-    highest_dir = os.path.join(checkpoints_dir, str(highest))
-    return load_checkpoint(trainable, highest_dir, device)
-
-
-def get_highest_checkpoint_number(checkpoints_dir):
-    checkpoints = []
-    for folder in os.listdir(checkpoints_dir):
+    def make_new_checkpoint(self, trainable, device, epoch, metrics):
         try:
-            checkpoints.append(int(folder))
-        except ValueError:
-            pass
+            highest = self._get_highest_checkpoint_number()
+            checkpoint_name = str(highest + 1)
+        except CheckpointsNotFound:
+            checkpoint_name = '0'
 
-    if not checkpoints:
-        raise CheckpointsNotFound()
+        checkpoint_path = os.path.join(self.checkpoints_dir, checkpoint_name)
+        os.makedirs(checkpoint_path)
+        Checkpoint.create(checkpoint_path, trainable, device, epoch, metrics)
 
-    return max(checkpoints)
+    def _get_highest_checkpoint_number(self):
+        checkpoints = []
+        for folder in os.listdir(self.checkpoints_dir):
+            try:
+                checkpoints.append(int(folder))
+            except ValueError:
+                pass
+
+        if not checkpoints:
+            raise CheckpointsNotFound()
+
+        return max(checkpoints)
+
+
+class Checkpoint:
+    def __init__(self, folder):
+        self._folder = folder
+        meta_path = self._metadata_path(self._folder)
+
+        with open(meta_path, encoding='utf-8') as f:
+            self._meta_data = json.loads(f.read())
+
+    @classmethod
+    def create(cls, save_dir, trainable, device, epoch, metrics):
+        checkpoint_path = cls._state_path(save_dir)
+        meta_path = cls._metadata_path(save_dir)
+
+        with open(meta_path, 'w', encoding='utf-8') as f:
+            metrics = clean_metrics(metrics)
+            meta_data = {
+                'device': str(device),
+                'epoch': epoch,
+                'metrics': metrics
+            }
+            f.write(json.dumps(meta_data))
+
+        models_dict = dict(encoder=trainable.encoder.state_dict(), decoder=trainable.decoder.state_dict())
+
+        optimizers_dict = {
+            'encoder_optimizer': trainable.encoder_optimizer.state_dict(),
+            'decoder_optimizer': trainable.decoder_optimizer.state_dict()
+        }
+
+        torch.save({
+            'models': models_dict,
+            'optimizers': optimizers_dict
+        }, checkpoint_path)
+        return cls(save_dir)
+
+    @classmethod
+    def _state_path(cls, folder):
+        return os.path.join(folder, 'checkpoint.pt')
+
+    @classmethod
+    def _metadata_path(cls, folder):
+        return os.path.join(folder, 'metadata.txt')
+
+    def get_session_state(self, device):
+        state_path = self._state_path(self._folder)
+        if self.meta_data["device"] == device:
+            state_dict = torch.load(state_path)
+        else:
+            state_dict = torch.load(state_path, map_location=device)
+        return SessionState(state_dict)
+
+    @property
+    def meta_data(self):
+        return self._meta_data
+
+
+class SessionState:
+    def __init__(self, state_dict):
+        self.state_dict = state_dict
+
+    @property
+    def encoder(self):
+        return self.state_dict["models"]["encoder"]
+
+    @property
+    def decoder(self):
+        return self.state_dict["models"]["decoder"]
+
+    @property
+    def encoder_optimizer(self):
+        return self.state_dict["optimizers"]["encoder_optimizer"]
+
+    @property
+    def decoder_optimizer(self):
+        return self.state_dict["optimizers"]["decoder_optimizer"]
 
 
 class CheckpointsNotFound(Exception):

@@ -44,6 +44,7 @@ def evaluate(task, supress_errors=True):
                 break
 
             try:
+                # todo: add flag to decide whether to evaluate with or without passing transcripts
                 y_hat = recognizer(images, transcripts)
             except torch.cuda.OutOfMemoryError:
                 if not supress_errors:
