@@ -1,31 +1,13 @@
-import torch
-from torchvision import transforms
-
 from .augmentation import WeakAugmentation
-from .image_utils import clip_height, pad_images, to_rgb
+from .image_utils import clip_all_heights, pad_images, make_rgb_batch
 
 
 def clip_to_64(images):
-    return clip_height(images, max_value=64)
+    return clip_all_heights(images, max_height=64)
 
 
 def pad(images):
     return pad_images(images, max_height=64)
-
-
-def to_tensors(images):
-    to_tensor = transforms.ToTensor()
-    return [to_tensor(im) for im in images]
-
-
-def to_rgb_tensors(tensors):
-    return [to_rgb(t) for t in tensors]
-
-
-def make_batch(images):
-    tensors = to_tensors(images)
-    tensors = to_rgb_tensors(tensors)
-    return torch.stack(tensors)
 
 
 class ImagePipeline:
@@ -38,4 +20,4 @@ class ImagePipeline:
         return images
 
 
-pretraining_pipeline = ImagePipeline([WeakAugmentation(), clip_to_64, pad, make_batch])
+pretraining_pipeline = ImagePipeline([WeakAugmentation(), clip_to_64, pad, make_rgb_batch])

@@ -1,13 +1,17 @@
-from torchvision.transforms import Resize, Pad
+import torch
+from torchvision.transforms import Resize, Pad, ToTensor
 
 
-def clip_height(images, max_value):
+def clip_height(image, max_value):
+    """Ensure image has at most max_value height"""
+    if image.height > max_value:
+        image = fit_height(image, max_value)
+    return image
+
+
+def clip_all_heights(images, max_height):
     """Ensure every image has at most max_value height"""
-    res = []
-    for im in images:
-        image = im if im.height <= max_value else fit_height(im, max_value)
-        res.append(image)
-    return res
+    return [clip_height(im, max_height) for im in images]
 
 
 def fit_height(image, target_height):
@@ -84,3 +88,33 @@ def to_rgb(tensor):
     :return: Tensor of shape (3, height, width)
     """
     return tensor.repeat(3, 1, 1)
+
+
+def to_tensors(images):
+    """Convert all images to tensors with 1 channel"""
+    to_tensor = ToTensor()
+    return [to_tensor(im) for im in images]
+
+
+def to_rgb_tensors(tensors):
+    """Convert all images to tensors consisting of 3 identical channels"""
+    return [to_rgb(t) for t in tensors]
+
+
+def make_batch(images):
+    """Convert a list of images to tensor of shape (num_images, 1, height, width).
+
+    All images are expected to have the same size.
+    """
+    tensors = to_tensors(images)
+    return torch.stack(tensors)
+
+
+def make_rgb_batch(images):
+    """Convert a list of images to tensor of shape (num_images, 3, height, width).
+
+    All images are expected to have the same size.
+    """
+    tensors = to_tensors(images)
+    tensors = to_rgb_tensors(tensors)
+    return torch.stack(tensors)
