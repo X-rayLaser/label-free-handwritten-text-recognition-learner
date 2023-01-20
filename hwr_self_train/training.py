@@ -1,6 +1,13 @@
+from dataclasses import dataclass
+from typing import Any, List, AnyStr
+
 import torch
+from torch.utils.data import DataLoader
+
 from hwr_self_train.formatters import Formatter
-from hwr_self_train.metrics import MetricsSetCalculator
+from hwr_self_train.metrics import MetricsSetCalculator, Metric
+from hwr_self_train.recognition import WordRecognitionPipeline
+from hwr_self_train.preprocessors import CharacterTokenizer
 
 
 def print_metrics(computed_metrics, epoch):
@@ -14,56 +21,27 @@ def print_metrics(computed_metrics, epoch):
     print(f'\r{whitespaces}\r{epoch_str} {final_metrics_string}')
 
 
-class TrainingLoop:
-    def __init__(self, trainer, metric_fns, epochs, starting_epoch):
-        self.trainer = trainer
-        self.metric_fns = metric_fns
-        self.formatter = Formatter()
-
-        self.epochs = epochs
-        self.starting_epoch = starting_epoch
-
-    def __iter__(self):
-        for epoch in range(self.starting_epoch, self.epochs + 1):
-            calculator = MetricsSetCalculator(self.metric_fns, interval=100)
-
-            for iteration_log in self.trainer:
-                running_metrics = calculator(iteration_log)
-                self.print_metrics(epoch, iteration_log, running_metrics)
-
-            yield epoch
-
-    def print_metrics(self, epoch, iteration_log, running_metrics):
-        stats = self.formatter(
-            epoch, iteration_log.iteration + 1,
-            iteration_log.num_iterations, running_metrics
-        )
-        print(f'\r{stats}', end='')
-
-
+@dataclass
 class IterationLogEntry:
-    def __init__(self, iteration, num_iterations, inputs, outputs, targets, loss):
-        self.iteration = iteration
-        self.num_iterations = num_iterations
-        self.inputs = inputs
-        self.outputs = outputs
-        self.targets = targets
-        self.loss = loss
+    iteration: int
+    num_iterations: int
+    outputs: torch.Tensor
+    targets: List[AnyStr]
+    loss: Any
 
 
+@dataclass
 class Trainer:
-    def __init__(self, recognizer, data_loader, loss_fn, tokenizer, supress_errors=True):
-        self.recognizer = recognizer
-        self.data_loader = data_loader
-        self.loss_fn = loss_fn
-        self.tokenizer = tokenizer
-        self.supress_errors = supress_errors
+    recognizer: WordRecognitionPipeline
+    data_loader: DataLoader
+    loss_fn: Metric
+    tokenizer: CharacterTokenizer
+    supress_errors: bool = True
 
     def __iter__(self):
         num_iterations = len(self.data_loader)
         self.recognizer.neural_pipeline.train_mode()
 
-        inputs = []
         for i, (images, transcripts) in enumerate(self.data_loader):
             try:
                 loss, result = self.train_one_iteration(images, transcripts)
@@ -74,8 +52,7 @@ class Trainer:
 
             outputs = result
             targets = transcripts
-            # todo: fix this (may get rid of inputs and targets)
-            yield IterationLogEntry(i, num_iterations, inputs, outputs, targets, loss)
+            yield IterationLogEntry(i, num_iterations, outputs, targets, loss)
 
     def train_one_iteration(self, images, transcripts):
         y_hat = self.recognizer(images, transcripts)
@@ -91,3 +68,30 @@ class Trainer:
         self.recognizer.neural_pipeline.step()
 
         return loss, y_hat
+
+
+@dataclass
+class TrainingLoop:
+    trainer: Trainer
+    metric_fns: dict
+    epochs: int
+    starting_epoch: int
+
+    def __iter__(self):
+        for epoch in range(self.starting_epoch, self.epochs + 1):
+            calculator = MetricsSetCalculator(self.metric_fns, interval=100)
+
+            for iteration_log in self.trainer:
+                running_metrics = calculator(iteration_log)
+                self.print_metrics(epoch, iteration_log, running_metrics)
+
+            yield epoch
+
+    def print_metrics(self, epoch, iteration_log: IterationLogEntry, running_metrics):
+        formatter = Formatter()
+
+        stats = formatter(
+            epoch, iteration_log.iteration + 1,
+            iteration_log.num_iterations, running_metrics
+        )
+        print(f'\r{stats}', end='')

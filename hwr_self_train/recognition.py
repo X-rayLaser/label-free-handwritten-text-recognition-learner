@@ -1,31 +1,18 @@
+from dataclasses import dataclass
+from typing import Any
+
+import torch
 from hwr_self_train.utils import make_tf_batch
+from .preprocessors import CharacterTokenizer
+from .image_pipelines import ImagePipeline
+from .models import ImageEncoder, AttendingDecoder
 
 
-class WordRecognitionPipeline:
-    def __init__(self, neural_pipeline, tokenizer, image_preprocessor, show_attention=False):
-        self.neural_pipeline = neural_pipeline
-        self.tokenizer = tokenizer
-        self.image_preprocessor = image_preprocessor
-        self.show_attention = show_attention
-
-    def __call__(self, images, transcripts=None):
-        """Given a list of PIL images and (optionally) corresponding list of text transcripts"""
-        image_batch = self.image_preprocessor(images)
-
-        if transcripts is not None:
-            transcripts, _ = make_tf_batch(transcripts, self.tokenizer)
-
-        if self.show_attention:
-            return self.neural_pipeline.debug_attention(image_batch)
-        else:
-            return self.neural_pipeline(image_batch, transcripts)
-
-
+@dataclass
 class EncoderDecoder:
-    def __init__(self, encoder, decoder, device):
-        self.encoder = encoder
-        self.decoder = decoder
-        self.device = device
+    encoder: ImageEncoder
+    decoder: AttendingDecoder
+    device: torch.device
 
     def debug_attention(self, image_batch):
         image_batch = image_batch.to(self.device)
@@ -44,12 +31,10 @@ class EncoderDecoder:
         return self.predict(image_batch, transcripts)
 
 
+@dataclass
 class TrainableEncoderDecoder(EncoderDecoder):
-    def __init__(self, encoder, decoder, device, encoder_optimizer, decoder_optimizer):
-        super().__init__(encoder, decoder, device)
-
-        self.encoder_optimizer = encoder_optimizer
-        self.decoder_optimizer = decoder_optimizer
+    encoder_optimizer: Any
+    decoder_optimizer: Any
 
     def zero_grad(self):
         self.encoder.zero_grad()
@@ -66,3 +51,23 @@ class TrainableEncoderDecoder(EncoderDecoder):
     def eval_mode(self):
         self.encoder.eval()
         self.decoder.eval()
+
+
+@dataclass
+class WordRecognitionPipeline:
+    neural_pipeline: TrainableEncoderDecoder
+    tokenizer: CharacterTokenizer
+    image_preprocessor: ImagePipeline
+    show_attention: bool = False
+
+    def __call__(self, images, transcripts=None):
+        """Given a list of PIL images and (optionally) corresponding list of text transcripts"""
+        image_batch = self.image_preprocessor(images)
+
+        if transcripts is not None:
+            transcripts, _ = make_tf_batch(transcripts, self.tokenizer)
+
+        if self.show_attention:
+            return self.neural_pipeline.debug_attention(image_batch)
+        else:
+            return self.neural_pipeline(image_batch, transcripts)
