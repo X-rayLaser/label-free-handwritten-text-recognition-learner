@@ -62,7 +62,10 @@ class Environment:
 
         self.neural_pipeline = load_or_create_neural_pipeline()
 
-        image_pipeline = make_pretraining_pipeline(max_heights=Configuration.image_height)
+        image_pipeline = make_pretraining_pipeline(
+            augmentation_options=Configuration.weak_augment_options,
+            max_heights=Configuration.image_height
+        )
         recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, image_pipeline)
 
         loss_fn = prepare_loss(Configuration.loss_function)

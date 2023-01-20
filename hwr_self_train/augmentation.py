@@ -1,7 +1,7 @@
 from random import randrange, uniform
 import math
 import random
-
+from dataclasses import dataclass
 import torch
 
 from torchvision import transforms
@@ -9,15 +9,16 @@ from torchvision.transforms import Compose, PILToTensor, ToPILImage
 from .image_utils import fit_height
 
 
+@dataclass
 class WeakAugmentation:
-    p_augment = 0.4
-    target_height = 64
-    fill = 255
-    rotation_degrees_range = (-5, 5)
-    blur_size = 3
-    blur_sigma = [1, 1]
-    noise_sigma = 10
-    fit_height = False
+    p_augment: float
+    target_height: int
+    fill: int
+    rotation_degrees_range: tuple
+    blur_size: int
+    blur_sigma: tuple
+    noise_sigma: int
+    should_fit_height: bool
 
     def __call__(self, images):
         rotate = self._rotate_and_scale()
@@ -43,11 +44,11 @@ class WeakAugmentation:
         def transform_func(image):
             return fit_height(rotate(image), target_height=self.target_height)
 
-        func = transform_func if self.fit_height else rotate
+        func = transform_func if self.should_fit_height else rotate
         return func
 
 
-class StrongAugmentation(WeakAugmentation):
+class StrongAugmentation:
     brightness = transforms.ColorJitter(brightness=(0.05, 0.95))
     contrast = transforms.ColorJitter(contrast=(0.05, 0.95))
     equalize = transforms.RandomEqualize(1)
@@ -62,7 +63,7 @@ class StrongAugmentation(WeakAugmentation):
 
     transforms_per_image = 2
 
-    def augment(self, images):
+    def __call__(self, images):
         return [self.transform_image(im) for im in images]
 
     def transform_image(self, image):

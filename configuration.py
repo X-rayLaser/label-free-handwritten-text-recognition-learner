@@ -71,6 +71,17 @@ class Configuration:
     }
     epochs = 5
 
+    weak_augment_options = dict(
+        p_augment=0.4,
+        target_height=64,
+        fill=255,
+        rotation_degrees_range=(-5, 5),
+        blur_size=3,
+        blur_sigma=[1, 1],
+        noise_sigma=10,
+        should_fit_height=False
+    )
+
 
 def create_metric(name, metric_fn, transform_fn):
     return Metric(

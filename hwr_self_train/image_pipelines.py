@@ -12,11 +12,12 @@ class ImagePipeline:
         return images
 
 
-def make_pretraining_pipeline(max_heights):
+def make_pretraining_pipeline(augmentation_options, max_heights):
     def clip(images):
         return clip_all_heights(images, max_height=max_heights)
 
     def pad(images):
         return pad_images(images, max_height=max_heights)
 
-    return ImagePipeline([WeakAugmentation(), clip, pad, make_rgb_batch])
+    augment = WeakAugmentation(**augmentation_options)
+    return ImagePipeline([augment, clip, pad, make_rgb_batch])
