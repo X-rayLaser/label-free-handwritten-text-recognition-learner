@@ -7,9 +7,9 @@ from .models import ImageEncoder, AttendingDecoder
 from .augmentation import WeakAugmentation
 from .recognition import (
     WordRecognitionPipeline,
-    TrainableEncoderDecoder,
-    ImageBatchPreprocessor
+    TrainableEncoderDecoder
 )
+from .image_pipelines import ImagePipeline, pretraining_pipeline
 from .datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
 from .checkpoints import (
     CheckpointKeeper,
@@ -63,9 +63,7 @@ class Environment:
 
         self.neural_pipeline = load_or_create_neural_pipeline()
 
-        augment = WeakAugmentation()
-        preprocessor = ImageBatchPreprocessor(augment, max_height=Configuration.image_height)
-        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, preprocessor)
+        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, pretraining_pipeline)
 
         loss_fn = prepare_loss(Configuration.loss_function)
 

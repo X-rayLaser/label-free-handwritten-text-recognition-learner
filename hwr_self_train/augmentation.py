@@ -46,18 +46,6 @@ class WeakAugmentation:
         return func
 
 
-def fit_height(image, target_height):
-    w = image.width
-    h = image.height
-
-    scaler = target_height / h
-
-    target_width = int(round(scaler * w))
-
-    resizer = Resize((target_height, target_width))
-    return resizer(image)
-
-
 class StrongAugmentation(WeakAugmentation):
     brightness = transforms.ColorJitter(brightness=(0.05, 0.95))
     contrast = transforms.ColorJitter(contrast=(0.05, 0.95))
