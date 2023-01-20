@@ -4,12 +4,11 @@ from torch.utils.data import DataLoader
 
 from hwr_self_train.utils import collate
 from .models import ImageEncoder, AttendingDecoder
-from .augmentation import WeakAugmentation
 from .recognition import (
     WordRecognitionPipeline,
     TrainableEncoderDecoder
 )
-from .image_pipelines import ImagePipeline, pretraining_pipeline
+from .image_pipelines import make_pretraining_pipeline
 from .datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
 from .checkpoints import (
     CheckpointKeeper,
@@ -63,7 +62,8 @@ class Environment:
 
         self.neural_pipeline = load_or_create_neural_pipeline()
 
-        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, pretraining_pipeline)
+        image_pipeline = make_pretraining_pipeline(max_heights=Configuration.image_height)
+        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, image_pipeline)
 
         loss_fn = prepare_loss(Configuration.loss_function)
 

@@ -5,7 +5,8 @@ import random
 import torch
 
 from torchvision import transforms
-from torchvision.transforms import Compose, PILToTensor, ToPILImage, Resize
+from torchvision.transforms import Compose, PILToTensor, ToPILImage
+from .image_utils import fit_height
 
 
 class WeakAugmentation:
