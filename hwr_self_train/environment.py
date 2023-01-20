@@ -4,7 +4,12 @@ from torch.utils.data import DataLoader
 
 from hwr_self_train.utils import collate
 from .models import ImageEncoder, AttendingDecoder
-from .recognition import WordRecognitionPipeline, TrainableEncoderDecoder
+from .augmentation import WeakAugmentation
+from .recognition import (
+    WordRecognitionPipeline,
+    TrainableEncoderDecoder,
+    ImageBatchPreprocessor
+)
 from .datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
 from .checkpoints import (
     CheckpointKeeper,
@@ -58,12 +63,13 @@ class Environment:
 
         self.neural_pipeline = load_or_create_neural_pipeline()
 
-        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer)
+        augment = WeakAugmentation()
+        preprocessor = ImageBatchPreprocessor(augment, max_height=Configuration.image_height)
+        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, preprocessor)
 
         loss_fn = prepare_loss(Configuration.loss_function)
 
         train_metric_fns = prepare_metrics(Configuration.training_metrics)
-
         val_metric_fns = prepare_metrics(Configuration.validation_metrics)
 
         training_loader = self._create_data_loader(SyntheticOnlineDataset,
@@ -107,7 +113,7 @@ class Environment:
     def _create_data_loader(self, dataset_class, dataset_size):
         ds = dataset_class(
             Configuration.fonts_dir, dataset_size,
-            dict_file=Configuration.dictionary_file, image_height=Configuration.image_height
+            dict_file=Configuration.dictionary_file
         )
 
         return DataLoader(ds, batch_size=Configuration.batch_size,

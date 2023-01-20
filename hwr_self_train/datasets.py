@@ -6,10 +6,9 @@ from .data_generator import SimpleRandomWordGenerator
 
 
 class SyntheticOnlineDataset(Dataset):
-    def __init__(self, fonts_dir, size, dict_file, image_height=64):
+    def __init__(self, fonts_dir, size, dict_file):
         self.size = size
         self.fonts_dir = fonts_dir
-        self.image_height = image_height
 
         simple_generator = SimpleRandomWordGenerator(dict_file, self.fonts_dir,
                                                      bg_range=(255, 255),
@@ -25,7 +24,6 @@ class SyntheticOnlineDataset(Dataset):
 
     def generate_example(self):
         im, word = next(self.iterator)
-        im = scale_image(im, target_height=self.image_height)
         return im, word
 
     def __len__(self):
@@ -33,8 +31,8 @@ class SyntheticOnlineDataset(Dataset):
 
 
 class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
-    def __init__(self, fonts_dir, size, dict_file, image_height=64):
-        super().__init__(fonts_dir, size, dict_file, image_height)
+    def __init__(self, fonts_dir, size, dict_file):
+        super().__init__(fonts_dir, size, dict_file)
 
         self.cache = {}
 
@@ -64,10 +62,9 @@ class SyntheticDataset:
 
 
 class IAMWordsDataset:
-    def __init__(self, index_path, target_height=64):
+    def __init__(self, index_path):
         self.index_path = index_path
         self.iam_index = []
-        self.target_height = target_height
 
         self.re_build()
 
@@ -85,7 +82,6 @@ class IAMWordsDataset:
         path, gray_level, transcript = self.iam_index[idx]
         image = Image.open(path)
         image = clean_image(image, gray_level)
-        image = scale_image(image, self.target_height)
         return path, gray_level, image, transcript
 
     def __len__(self):
@@ -106,15 +102,3 @@ class LabeledDataset(IAMWordsDataset):
 
 def clean_image(image, gray_level):
     return image.point(lambda p: 255 if p > gray_level else p)
-
-
-def scale_image(image, target_height):
-    w = image.width
-    h = image.height
-
-    scaler = target_height / h
-
-    target_width = int(round(scaler * w))
-
-    resizer = Resize((target_height, target_width))
-    return resizer(image)

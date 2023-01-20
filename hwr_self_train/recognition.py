@@ -1,17 +1,20 @@
-from hwr_self_train.utils import pad_sequences, prepare_targets, \
-    make_tf_batch, ImageBatchPreprocessor
+import torch
+from torchvision import transforms
+from hwr_self_train.augmentation import fit_height
+
+from hwr_self_train.utils import make_tf_batch
 
 
 class WordRecognitionPipeline:
-    def __init__(self, neural_pipeline, tokenizer, show_attention=False):
+    def __init__(self, neural_pipeline, tokenizer, image_preprocessor, show_attention=False):
         self.neural_pipeline = neural_pipeline
         self.tokenizer = tokenizer
+        self.image_preprocessor = image_preprocessor
         self.show_attention = show_attention
 
     def __call__(self, images, transcripts=None):
         """Given a list of PIL images and (optionally) corresponding list of text transcripts"""
-        batch_preprocessor = ImageBatchPreprocessor()
-        image_batch = batch_preprocessor(images)
+        image_batch = self.image_preprocessor(images)
 
         if transcripts is not None:
             transcripts, _ = make_tf_batch(transcripts, self.tokenizer)
@@ -67,3 +70,75 @@ class TrainableEncoderDecoder(EncoderDecoder):
     def eval_mode(self):
         self.encoder.eval()
         self.decoder.eval()
+
+
+class ImageBatchPreprocessor:
+    def __init__(self, augment_strategy=None, pad_strategy=None,
+                 max_height=None, target_height=None, pad_fill=255):
+        self.augment_strategy = augment_strategy or identity
+        self.pad_strategy = pad_strategy or one_sided_padding
+        self.max_height = max_height
+        self.target_height = target_height
+        self.fill = pad_fill
+
+    def __call__(self, images):
+        to_tensor = transforms.ToTensor()
+
+        images = self.augment_strategy(images)
+
+        if self.max_height:
+            images = self.clip_height(images, self.max_height)
+        elif self.target_height:
+            images = self.to_same_height(images, self.target_height)
+
+        images = self.pad_images(images)
+        tensors = [self.to_rgb(to_tensor(im)) for im in images]
+        return torch.stack(tensors)
+
+    def clip_height(self, images, max_value):
+        """Ensure every image has at most max_value height"""
+        res = []
+        for im in images:
+            image = im if im.height <= max_value else fit_height(im, max_value)
+            res.append(image)
+        return res
+
+    def to_same_height(self, images, height):
+        return [fit_height(im, height) for im in images]
+
+    def to_rgb(self, image):
+        return image.repeat(3, 1, 1)
+
+    def pad_images(self, images):
+        max_height = self.max_height or max([im.height for im in images])
+        max_width = max([im.width for im in images])
+
+        if max_width % 32 != 0:
+            max_width = (max_width // 32 + 1) * 32
+
+        padded = []
+        for im in images:
+            padding_top, padding_bottom = self.pad_strategy(max_height, im.height)
+            padding_left, padding_right = self.pad_strategy(max_width, im.width)
+
+            pad = transforms.Pad((padding_left, padding_top, padding_right, padding_bottom),
+                                 fill=self.fill)
+            padded.append(pad(im))
+
+        return padded
+
+
+def identity(images):
+    return images
+
+
+def equal_padding(max_length, length):
+    len_diff = max_length - length
+    padding1 = len_diff // 2
+    padding2 = len_diff - padding1
+    return padding1, padding2
+
+
+def one_sided_padding(max_length, length):
+    len_diff = max_length - length
+    return 0, len_diff
