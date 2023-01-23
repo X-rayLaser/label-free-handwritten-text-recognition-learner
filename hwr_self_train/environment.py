@@ -2,6 +2,7 @@ import os
 
 from torch.utils.data import DataLoader
 
+import configuration
 from hwr_self_train.utils import collate
 from .models import ImageEncoder, AttendingDecoder
 from .recognition import (
@@ -12,6 +13,7 @@ from .image_pipelines import make_pretraining_pipeline, make_validation_pipeline
 from .datasets import (
     SyntheticOnlineDataset,
     SyntheticOnlineDatasetCached,
+    UnlabeledDataset,
     LabeledDataset
 )
 
@@ -23,7 +25,16 @@ from .training import TrainingLoop, Trainer
 from .history_saver import HistoryCsvSaver
 from .evaluation import EvaluationTask
 
-from configuration import tokenizer, Configuration, prepare_metrics, prepare_loss, create_optimizer
+from configuration import (
+    tokenizer,
+    Configuration,
+    prepare_metrics,
+    prepare_loss,
+    create_optimizer
+)
+
+from hwr_self_train.training import ConsistencyTrainer
+from hwr_self_train.augmentation import WeakAugmentation, StrongAugmentation
 
 
 def create_neural_pipeline(device):
@@ -140,3 +151,61 @@ class Environment:
 
         return DataLoader(ds, batch_size=Configuration.batch_size,
                           num_workers=Configuration.num_workers, collate_fn=collate)
+
+
+class TuningEnvironment:
+    def __init__(self):
+        pseudo_labeled_dataset = LabeledDataset(Configuration.iam_pseudo_labels)
+        pseudo_labeled_loader = self._create_loader(pseudo_labeled_dataset)
+
+        training_dataset = LabeledDataset(Configuration.iam_train_path)
+        training_loader = self._create_loader(training_dataset)
+
+        test_ds = LabeledDataset(Configuration.iam_dataset_path)
+        test_loader = self._create_loader(test_ds)
+
+        unlabeled_ds = UnlabeledDataset(Configuration.iam_train_path)
+        unlabeled_loader = self._create_loader(unlabeled_ds)
+
+        encoder_decoder = load_or_create_neural_pipeline()
+        image_preprocessor = make_validation_pipeline(max_heights=Configuration.image_height)
+        recognizer = WordRecognitionPipeline(encoder_decoder, tokenizer, image_preprocessor)
+
+        metric_fns = prepare_metrics(Configuration.training_metrics)
+
+        test_metrics = prepare_metrics(Configuration.test_metrics)
+
+        eval_steps = Configuration.evaluation_steps
+
+        self.pseudo_labeled_dataset = pseudo_labeled_dataset
+        self.pseudo_labeled_loader = pseudo_labeled_loader
+        self.unlabeled_loader = unlabeled_loader
+        self.tokenizer = tokenizer
+        self.pseudo_labels_path = Configuration.iam_pseudo_labels
+        self.threshold = Configuration.confidence_threshold
+        self.tuning_epochs = Configuration.tuning_epochs
+        self.recognizer = recognizer
+        self.metric_fns = metric_fns
+
+        self.tasks = [EvaluationTask(recognizer, training_loader, self.metric_fns,
+                                     num_batches=eval_steps["training_set"]),
+                      EvaluationTask(recognizer, test_loader, test_metrics,
+                                     num_batches=eval_steps["test_set"])]
+
+        self.history_saver = HistoryCsvSaver('tuning_history.csv')
+
+    def _create_loader(self, ds):
+        return DataLoader(ds,
+                          batch_size=Configuration.batch_size,
+                          num_workers=Configuration.num_workers,
+                          collate_fn=collate)
+
+    def get_trainer(self):
+        self.pseudo_labeled_dataset.re_build()
+        loader = self._create_loader(self.pseudo_labeled_dataset)
+
+        loss_fn = prepare_loss(Configuration.loss_function)
+        weak_augment = WeakAugmentation(**Configuration.weak_augment_options)
+        strong_augment = StrongAugmentation()
+        return ConsistencyTrainer(self.recognizer, loader, loss_fn,
+                                  tokenizer, weak_augment, strong_augment)

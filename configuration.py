@@ -90,6 +90,7 @@ class Configuration:
         'test_set': 0.5
     }
     epochs = 5
+    tuning_epochs = 50
 
     weak_augment_options = dict(
         p_augment=0.4,
