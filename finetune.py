@@ -35,8 +35,6 @@ class PseudoLabelPredictor:
             except ValueError:
                 first_n = len(tokens)
 
-            # todo: usually, first predicted token is <s>,
-            #  perhaps it should also be excluded from confidence calculation
             mean_confidence = values[i, :first_n].mean()
 
             transcript = self.tokenizer.decode_to_string(tokens, clean_output=True)
@@ -74,23 +72,44 @@ metric_fns = prepare_metrics(Configuration.training_metrics)
 weak_augment = WeakAugmentation(**Configuration.weak_augment_options)
 strong_augment = StrongAugmentation()
 trainer = ConsistencyTrainer(recognizer, train_loader, loss_fn, tokenizer, weak_augment, strong_augment)
-training_loop = TrainingLoop(trainer, metric_fns, epochs=50, starting_epoch=1)
 
 test_metrics = []
-task = EvaluationTask(recognizer, test_loader, test_metrics, num_batches=1.0)
+tasks = [EvaluationTask(recognizer, train_loader, metric_fns, num_batches=0.1),
+         EvaluationTask(recognizer, test_loader, test_metrics, num_batches=0.5)]
 
 history_saver = HistoryCsvSaver('tuning_history.csv')
 
-for epoch in range(50):
-    for path, grey_level, images in train_loader:
+
+def clear_pseudo_labels(pseudo_labels_path):
+    with open(pseudo_labels_path, "w") as f:
+        pass
+
+
+def re_build_index(dataset):
+    dataset.re_build()
+
+
+def predict_labels(data_loader, recognizer):
+    for path, grey_level, images in data_loader:
         y_hat = recognizer(images)
         predictor(path, grey_level, y_hat)
 
+
+def train_on_pseudo_labels(trainer, metric_fns, tasks, epoch):
     training_loop = TrainingLoop(trainer, metric_fns, epochs=1, starting_epoch=1)
     next(iter(training_loop))
 
-    metrics = evaluate(task)
+    metrics = {}
+    for task in tasks:
+        metrics.update(evaluate(task))
 
     print_metrics(metrics, epoch)
     history_saver.add_entry(epoch, metrics)
     #env.save_checkpoint(epoch, metrics)
+
+
+for epoch in range(50):
+    clear_pseudo_labels(pseudo_labels_path)
+    re_build_index(ds)
+    predict_labels(train_loader, recognizer)
+    train_on_pseudo_labels(trainer, metric_fns, tasks, epoch)
