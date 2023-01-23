@@ -36,7 +36,7 @@ optimizer_conf = {
 
 class Configuration:
     image_height = 64
-    hidden_size = 32
+    hidden_size = 128
 
     iam_pseudo_labels = 'iam/pseudo_labels.txt'
     iam_train_path = 'iam/iam_train.txt'
@@ -45,10 +45,10 @@ class Configuration:
 
     fonts_dir = './fonts'
     dictionary_file = 'words.txt'
-    training_set_size = 4
-    validation_set_size = 2
+    training_set_size = 50000
+    validation_set_size = 2500
 
-    batch_size = 2
+    batch_size = 32
     num_workers = 2
 
     loss_function = loss_conf
@@ -84,7 +84,7 @@ class Configuration:
     history_path = 'pretrain_history.csv'
 
     evaluation_steps = {
-        'training_set': 1.0,
+        'training_set': 0.1,
         'train_validation_set': 1.0,
         'validation_set': 1.0,
         'test_set': 0.5
