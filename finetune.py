@@ -1,3 +1,4 @@
+import torch
 from torch.nn.functional import softmax
 from hwr_self_train.training import TrainingLoop
 from hwr_self_train.evaluation import evaluate
@@ -52,7 +53,7 @@ def predict_labels(data_loader, recognizer, predictor):
 
 
 def train_on_pseudo_labels(trainer, metric_fns, tasks, history_saver, epoch):
-    training_loop = TrainingLoop(trainer, metric_fns, epochs=1, starting_epoch=epoch)
+    training_loop = TrainingLoop(trainer, metric_fns, epochs=epoch + 1, starting_epoch=epoch)
     next(iter(training_loop))
 
     metrics = {}
@@ -71,6 +72,8 @@ if __name__ == '__main__':
 
     for epoch in range(env.tuning_epochs):
         clear_pseudo_labels(env.pseudo_labels_path)
-        predict_labels(env.unlabeled_loader, env.recognizer, predictor)
+        with torch.no_grad:
+            predict_labels(env.unlabeled_loader, env.recognizer, predictor)
+
         trainer = env.get_trainer()
         train_on_pseudo_labels(trainer, env.metric_fns, env.tasks, env.history_saver, epoch)
