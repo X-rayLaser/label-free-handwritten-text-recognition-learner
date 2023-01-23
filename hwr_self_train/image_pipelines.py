@@ -12,22 +12,23 @@ class ImagePipeline:
         return images
 
 
-def make_pretraining_pipeline(augmentation_options, max_heights):
+def compose_transforms(max_heights):
     def clip(images):
         return clip_all_heights(images, max_height=max_heights)
 
     def pad(images):
         return pad_images(images, max_height=max_heights)
+    return [clip, pad, make_rgb_batch]
+
+
+def make_pretraining_pipeline(augmentation_options, max_heights):
+    no_augment_transforms = compose_transforms(max_heights)
 
     augment = WeakAugmentation(**augmentation_options)
-    return ImagePipeline([augment, clip, pad, make_rgb_batch])
+    all_transforms = [augment] + no_augment_transforms
+
+    return ImagePipeline(all_transforms)
 
 
 def make_validation_pipeline(max_heights):
-    def clip(images):
-        return clip_all_heights(images, max_height=max_heights)
-
-    def pad(images):
-        return pad_images(images, max_height=max_heights)
-
-    return ImagePipeline([clip, pad, make_rgb_batch])
+    return ImagePipeline(compose_transforms(max_heights))

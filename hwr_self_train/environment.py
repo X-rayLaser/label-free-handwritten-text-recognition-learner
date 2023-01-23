@@ -86,6 +86,10 @@ class Environment:
         val_loader = self._create_data_loader(SyntheticOnlineDatasetCached,
                                               Configuration.validation_set_size)
 
+        test_ds = LabeledDataset(Configuration.iam_dataset_path)
+        test_loader = DataLoader(test_ds, batch_size=Configuration.batch_size,
+                                 num_workers=Configuration.num_workers, collate_fn=collate)
+
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
         self.epochs_trained = self._get_trained_epochs()
@@ -106,10 +110,6 @@ class Environment:
         val_recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, val_preprocessor)
         eval_on_val = EvaluationTask(val_recognizer, val_loader, val_metric_fns,
                                      Configuration.evaluation_steps['validation_set'])
-
-        test_ds = LabeledDataset(Configuration.iam_dataset_path)
-        test_loader = DataLoader(test_ds, batch_size=Configuration.batch_size,
-                                 num_workers=Configuration.num_workers, collate_fn=collate)
 
         eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
                                       num_batches=Configuration.evaluation_steps['test_set'])
