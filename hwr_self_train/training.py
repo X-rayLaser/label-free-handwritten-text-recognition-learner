@@ -31,7 +31,7 @@ class IterationLogEntry:
 
 
 @dataclass
-class Trainer:
+class BaseTrainer:
     recognizer: WordRecognitionPipeline
     data_loader: DataLoader
     loss_fn: Metric
@@ -55,8 +55,7 @@ class Trainer:
             yield IterationLogEntry(i, num_iterations, outputs, targets, loss)
 
     def train_one_iteration(self, images, transcripts):
-        y_hat = self.recognizer(images, transcripts)
-        loss = self.loss_fn(y_hat=y_hat, y=transcripts)
+        loss, y_hat = self.compute_loss(images, transcripts)
 
         # invoke zero_grad for each neural network
         self.recognizer.neural_pipeline.zero_grad()
@@ -69,10 +68,36 @@ class Trainer:
 
         return loss, y_hat
 
+    def compute_loss(self, images, transcripts):
+        raise NotImplemented
+
+
+class Trainer(BaseTrainer):
+    def compute_loss(self, images, transcripts):
+        y_hat = self.recognizer(images, transcripts)
+        loss = self.loss_fn(y_hat=y_hat, y=transcripts)
+        return loss, y_hat
+
+
+class ConsistencyTrainer(BaseTrainer):
+    def __init__(self, recognizer, data_loader, loss_fn, tokenizer, weak_augment, strong_augment):
+        super().__init__(recognizer, data_loader, loss_fn, tokenizer)
+        self.weak_augment = weak_augment
+        self.strong_augment = strong_augment
+
+    def compute_loss(self, images, transcripts):
+        y_weak = self.recognizer(self.weak_augment(images), transcripts)
+        y_strong = self.recognizer(self.strong_augment(images), transcripts)
+
+        loss_weak = self.loss_fn(y_hat=y_weak, y=transcripts)
+        loss_strong = self.loss_fn(y_hat=y_strong, y=transcripts)
+        loss = loss_weak + loss_strong
+        return loss, y_weak
+
 
 @dataclass
 class TrainingLoop:
-    trainer: Trainer
+    trainer: BaseTrainer
     metric_fns: dict
     epochs: int
     starting_epoch: int

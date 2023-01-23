@@ -38,7 +38,10 @@ class Configuration:
     image_height = 64
     hidden_size = 32
 
-    iam_dataset_path = './iam/iam_val.txt'
+    iam_pseudo_labels = 'iam/pseudo_labels.txt'
+    iam_train_path = 'iam/iam_train.txt'
+    iam_dataset_path = 'iam/iam_val.txt'
+    confidence_threshold = 0.4
 
     fonts_dir = './fonts'
     dictionary_file = 'words.txt'
