@@ -57,6 +57,8 @@ def load_or_create_neural_pipeline():
         if os.path.isfile(Configuration.history_path):
             os.remove(Configuration.history_path)
 
+        neural_pipeline.encoder.to(neural_pipeline.device)
+        neural_pipeline.decoder.to(neural_pipeline.device)
         keeper.make_new_checkpoint(neural_pipeline, Configuration.device, 0, metrics={})
         return neural_pipeline
 
