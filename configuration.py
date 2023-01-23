@@ -38,6 +38,8 @@ class Configuration:
     image_height = 64
     hidden_size = 32
 
+    iam_dataset_path = './iam/iam_val.txt'
+
     fonts_dir = './fonts'
     dictionary_file = 'words.txt'
     training_set_size = 4
@@ -56,9 +58,22 @@ class Configuration:
         'CER': cer_conf
     }
 
+    # evaluated using the same augmentation used in training dataset
+    train_val_metrics = {
+        'train-val loss': loss_conf,
+        'train-val CER': cer_conf
+    }
+
+    # evaluated without using augmentation
     validation_metrics = {
         'val loss': loss_conf,
         'val CER': cer_conf
+    }
+
+    # evaluated on IAM dataset (without augmentation)
+    test_metrics = {
+        'iam loss': loss_conf,
+        'iam CER': cer_conf
     }
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -67,7 +82,9 @@ class Configuration:
 
     evaluation_steps = {
         'training_set': 1.0,
-        'validation_set': 1.0
+        'train_validation_set': 1.0,
+        'validation_set': 1.0,
+        'test_set': 0.5
     }
     epochs = 5
 

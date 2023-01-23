@@ -4,5 +4,6 @@
 venv/
 fonts/
 checkpoints/
+iam/
 pretrain_history.csv
 words.txt

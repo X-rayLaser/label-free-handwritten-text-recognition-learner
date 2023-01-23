@@ -7,6 +7,7 @@ from .data_generator import SimpleRandomWordGenerator
 
 class SyntheticOnlineDataset(Dataset):
     def __init__(self, fonts_dir, size, dict_file):
+        super().__init__()
         self.size = size
         self.fonts_dir = fonts_dir
 
@@ -61,8 +62,9 @@ class SyntheticDataset:
         return len(self.files)
 
 
-class IAMWordsDataset:
+class IAMWordsDataset(Dataset):
     def __init__(self, index_path):
+        super().__init__()
         self.index_path = index_path
         self.iam_index = []
 

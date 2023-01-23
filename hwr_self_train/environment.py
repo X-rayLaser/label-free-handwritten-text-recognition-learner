@@ -8,8 +8,13 @@ from .recognition import (
     WordRecognitionPipeline,
     TrainableEncoderDecoder
 )
-from .image_pipelines import make_pretraining_pipeline
-from .datasets import SyntheticOnlineDataset, SyntheticOnlineDatasetCached
+from .image_pipelines import make_pretraining_pipeline, make_validation_pipeline
+from .datasets import (
+    SyntheticOnlineDataset,
+    SyntheticOnlineDatasetCached,
+    LabeledDataset
+)
+
 from .checkpoints import (
     CheckpointKeeper,
     CheckpointsNotFound
@@ -71,7 +76,9 @@ class Environment:
         loss_fn = prepare_loss(Configuration.loss_function)
 
         train_metric_fns = prepare_metrics(Configuration.training_metrics)
+        train_val_metric_fns = prepare_metrics(Configuration.train_val_metrics)
         val_metric_fns = prepare_metrics(Configuration.validation_metrics)
+        test_metric_fns = prepare_metrics(Configuration.test_metrics)
 
         training_loader = self._create_data_loader(SyntheticOnlineDataset,
                                                    Configuration.training_set_size)
@@ -91,10 +98,22 @@ class Environment:
 
         eval_on_train = EvaluationTask(recognizer, training_loader, train_metric_fns,
                                        Configuration.evaluation_steps['training_set'])
-        eval_on_val = EvaluationTask(recognizer, val_loader, val_metric_fns,
+
+        eval_on_train_val = EvaluationTask(recognizer, val_loader, train_val_metric_fns,
+                                           Configuration.evaluation_steps['train_validation_set'])
+
+        val_preprocessor = make_validation_pipeline(max_heights=Configuration.image_height)
+        val_recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, val_preprocessor)
+        eval_on_val = EvaluationTask(val_recognizer, val_loader, val_metric_fns,
                                      Configuration.evaluation_steps['validation_set'])
 
-        self.eval_tasks = [eval_on_train, eval_on_val]
+        test_ds = LabeledDataset(Configuration.iam_dataset_path)
+        test_loader = DataLoader(test_ds, batch_size=Configuration.batch_size,
+                                 num_workers=Configuration.num_workers, collate_fn=collate)
+
+        eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
+                                      num_batches=Configuration.evaluation_steps['test_set'])
+        self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val, eval_on_test]
 
     def save_checkpoint(self, epoch, metrics):
         keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
