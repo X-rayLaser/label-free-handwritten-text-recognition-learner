@@ -17,7 +17,7 @@ def compose_transforms(max_heights):
         return clip_all_heights(images, max_height=max_heights)
 
     def pad(images):
-        return pad_images(images, max_height=max_heights)
+        return pad_images(images, max_height=max_heights, extra_pad=32)
     return [clip, pad, make_rgb_batch]
 
 
