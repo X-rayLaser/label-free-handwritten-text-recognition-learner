@@ -66,6 +66,11 @@ class CheckpointKeeper:
 
         return max(checkpoints)
 
+    def get_latest_checkpoint_dir(self):
+        highest = self._get_highest_checkpoint_number()
+        checkpoint_name = str(highest)
+        return os.path.join(self.checkpoints_dir, checkpoint_name)
+
 
 class Checkpoint:
     def __init__(self, folder):

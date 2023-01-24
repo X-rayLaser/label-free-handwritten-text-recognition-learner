@@ -1,8 +1,8 @@
 import os
+import shutil
 
 from torch.utils.data import DataLoader
 
-import configuration
 from hwr_self_train.utils import collate
 from .models import ImageEncoder, AttendingDecoder
 from .recognition import (
@@ -56,7 +56,13 @@ def create_neural_pipeline(device):
 
 
 def load_or_create_neural_pipeline():
+    """Instantiate encoder-decoder model and restore it from checkpoint if it exists,
+    otherwise create checkpoint.
+
+    Returns encoder-decoder model
+    """
     neural_pipeline = create_neural_pipeline(Configuration.device)
+
     keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
 
     try:
@@ -65,13 +71,31 @@ def load_or_create_neural_pipeline():
     except CheckpointsNotFound:
         # since checkpoints do not exist, assume that we start from scratch,
         # therefore we remove existing history file
-        if os.path.isfile(Configuration.history_path):
-            os.remove(Configuration.history_path)
+        remove_history(Configuration.history_path)
 
         neural_pipeline.encoder.to(neural_pipeline.device)
         neural_pipeline.decoder.to(neural_pipeline.device)
         keeper.make_new_checkpoint(neural_pipeline, Configuration.device, 0, metrics={})
         return neural_pipeline
+
+
+def remove_history(history_path):
+    if os.path.isfile(history_path):
+        os.remove(history_path)
+
+
+def create_tuning_checkpoint():
+    """Copy checkpoint of a pretrained model into a directory for tuning checkpoints
+    """
+    keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+    checkpoint_path = keeper.get_latest_checkpoint_dir()
+    dest_path = os.path.join(Configuration.tuning_checkpoints_dir, '0')
+    shutil.copytree(checkpoint_path, dest_path)
+
+
+def tuning_checkpoint_exists():
+    path = os.path.join(Configuration.tuning_checkpoints_dir, '0')
+    return os.path.exists(path)
 
 
 class Environment:
@@ -167,7 +191,14 @@ class TuningEnvironment:
         unlabeled_ds = UnlabeledDataset(Configuration.iam_train_path)
         unlabeled_loader = self._create_loader(unlabeled_ds)
 
-        encoder_decoder = load_or_create_neural_pipeline()
+        if not tuning_checkpoint_exists():
+            create_tuning_checkpoint()
+            remove_history(Configuration.tuning_history_path)
+
+        encoder_decoder = create_neural_pipeline(Configuration.device)
+        keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
+        keeper.load_latest_checkpoint(encoder_decoder, Configuration.device)
+
         image_preprocessor = make_validation_pipeline(max_heights=Configuration.image_height)
         recognizer = WordRecognitionPipeline(encoder_decoder, tokenizer, image_preprocessor)
 
@@ -184,6 +215,7 @@ class TuningEnvironment:
         self.pseudo_labels_path = Configuration.iam_pseudo_labels
         self.threshold = Configuration.confidence_threshold
         self.tuning_epochs = Configuration.tuning_epochs
+        self.neural_pipeline = encoder_decoder
         self.recognizer = recognizer
         self.metric_fns = metric_fns
 
@@ -192,7 +224,7 @@ class TuningEnvironment:
                       EvaluationTask(recognizer, test_loader, test_metrics,
                                      num_batches=eval_steps["test_set"])]
 
-        self.history_saver = HistoryCsvSaver('tuning_history.csv')
+        self.history_saver = HistoryCsvSaver(Configuration.tuning_history_path)
 
     def _create_loader(self, ds):
         return DataLoader(ds,
@@ -209,3 +241,12 @@ class TuningEnvironment:
         strong_augment = StrongAugmentation()
         return ConsistencyTrainer(self.recognizer, loader, loss_fn,
                                   tokenizer, weak_augment, strong_augment)
+
+    def save_checkpoint(self, epoch, metrics):
+        keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
+        keeper.make_new_checkpoint(self.neural_pipeline, Configuration.device, epoch, metrics)
+
+    def get_trained_epochs(self):
+        keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+        meta_data = keeper.get_latest_meta_data()
+        return meta_data["epoch"]

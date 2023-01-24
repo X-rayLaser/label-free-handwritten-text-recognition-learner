@@ -52,28 +52,33 @@ def predict_labels(data_loader, recognizer, predictor):
         predictor(path, grey_level, y_hat)
 
 
-def train_on_pseudo_labels(trainer, metric_fns, tasks, history_saver, epoch):
-    training_loop = TrainingLoop(trainer, metric_fns, epochs=epoch + 1, starting_epoch=epoch)
+def train_on_pseudo_labels(env, epoch):
+    trainer = env.get_trainer()
+    training_loop = TrainingLoop(trainer, env.metric_fns, epochs=epoch + 1, starting_epoch=epoch)
     next(iter(training_loop))
 
     metrics = {}
-    for task in tasks:
+    for task in env.tasks:
         metrics.update(evaluate(task))
 
     print_metrics(metrics, epoch)
-    history_saver.add_entry(epoch, metrics)
-    #env.save_checkpoint(epoch, metrics)
+    env.history_saver.add_entry(epoch, metrics)
+    env.save_checkpoint(epoch, metrics)
 
 
-if __name__ == '__main__':
+def fine_tune():
     env = TuningEnvironment()
 
     predictor = PseudoLabelPredictor(env.tokenizer, env.threshold, env.pseudo_labels_path)
 
-    for epoch in range(env.tuning_epochs):
+    starting_epoch = env.get_trained_epochs() + 1
+    for epoch in range(starting_epoch, starting_epoch + env.tuning_epochs):
         clear_pseudo_labels(env.pseudo_labels_path)
-        with torch.no_grad:
+        with torch.no_grad():
             predict_labels(env.unlabeled_loader, env.recognizer, predictor)
 
-        trainer = env.get_trainer()
-        train_on_pseudo_labels(trainer, env.metric_fns, env.tasks, env.history_saver, epoch)
+        train_on_pseudo_labels(env, epoch)
+
+
+if __name__ == '__main__':
+    fine_tune()
