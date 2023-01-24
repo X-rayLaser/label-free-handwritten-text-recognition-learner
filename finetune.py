@@ -4,6 +4,7 @@ from hwr_self_train.training import TrainingLoop
 from hwr_self_train.evaluation import evaluate
 from hwr_self_train.training import print_metrics
 from hwr_self_train.environment import TuningEnvironment
+from hwr_self_train.formatters import ProgressBar
 
 
 class PseudoLabelPredictor:
@@ -47,9 +48,18 @@ def re_build_index(dataset):
 
 
 def predict_labels(data_loader, recognizer, predictor):
-    for path, grey_level, images in data_loader:
+    whitespaces = ' ' * 150
+    print(f'\r{whitespaces}', end='')
+
+    progress_bar = ProgressBar()
+    for i, (path, grey_level, images) in enumerate(data_loader):
         y_hat = recognizer(images)
         predictor(path, grey_level, y_hat)
+
+        step_number = i + 1
+        num_batches = len(data_loader)
+        progress = progress_bar.updated(step_number, num_batches, cols=50)
+        print(f'\rPredicting pseudo labels: {progress} {step_number}/{num_batches}', end='')
 
 
 def train_on_pseudo_labels(env, epoch):
