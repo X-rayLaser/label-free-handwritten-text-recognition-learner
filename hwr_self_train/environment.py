@@ -237,10 +237,9 @@ class TuningEnvironment:
         loader = self._create_loader(self.pseudo_labeled_dataset)
 
         loss_fn = prepare_loss(Configuration.loss_function)
-        weak_augment = WeakAugmentation(**Configuration.weak_augment_options)
-        strong_augment = StrongAugmentation()
-        return ConsistencyTrainer(self.recognizer, loader, loss_fn,
-                                  tokenizer, weak_augment, strong_augment)
+        return Configuration.tuning_trainer_factory(
+            self.recognizer, loader, loss_fn, tokenizer,
+            **Configuration.weak_augment_options)
 
     def save_checkpoint(self, epoch, metrics):
         keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
@@ -250,3 +249,5 @@ class TuningEnvironment:
         keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
         meta_data = keeper.get_latest_meta_data()
         return meta_data["epoch"]
+
+

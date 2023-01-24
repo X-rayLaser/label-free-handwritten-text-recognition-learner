@@ -6,6 +6,7 @@ from hwr_self_train.preprocessors import CharacterTokenizer, decode_output_batch
 from hwr_self_train.loss_functions import MaskedCrossEntropy
 from hwr_self_train.loss_functions import LossTargetTransform
 from hwr_self_train.metrics import Metric
+from hwr_self_train.training import get_simple_trainer, get_consistency_trainer
 
 tokenizer = CharacterTokenizer()
 
@@ -96,6 +97,7 @@ class Configuration:
     epochs = 5
     tuning_epochs = 50
 
+    tuning_trainer_factory = get_simple_trainer
     weak_augment_options = dict(
         p_augment=0.4,
         target_height=64,

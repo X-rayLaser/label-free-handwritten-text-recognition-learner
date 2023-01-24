@@ -8,6 +8,7 @@ from hwr_self_train.formatters import Formatter
 from hwr_self_train.metrics import MetricsSetCalculator, Metric
 from hwr_self_train.recognition import WordRecognitionPipeline
 from hwr_self_train.preprocessors import CharacterTokenizer
+from hwr_self_train.augmentation import WeakAugmentation, StrongAugmentation
 
 
 def print_metrics(computed_metrics, epoch):
@@ -120,3 +121,15 @@ class TrainingLoop:
             iteration_log.num_iterations, running_metrics
         )
         print(f'\r{stats}', end='')
+
+
+def get_simple_trainer(recognizer, loader, loss_fn, tokenizer, **kwargs):
+    return Trainer(recognizer, loader, loss_fn, tokenizer)
+
+
+def get_consistency_trainer(recognizer, loader, loss_fn, tokenizer,
+                               **weak_augment_options):
+    weak_augment = WeakAugmentation(**weak_augment_options)
+    strong_augment = StrongAugmentation()
+    return ConsistencyTrainer(recognizer, loader, loss_fn, tokenizer,
+                              weak_augment, strong_augment)
