@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 
 from torch.utils.data import DataLoader
@@ -85,12 +86,25 @@ def remove_history(history_path):
 
 
 def create_tuning_checkpoint():
-    """Copy checkpoint of a pretrained model into a directory for tuning checkpoints
-    """
+    """Copy checkpoint of a pretrained model into a directory for tuning checkpoints"""
     keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
     checkpoint_path = keeper.get_latest_checkpoint_dir()
     dest_path = os.path.join(Configuration.tuning_checkpoints_dir, '0')
     shutil.copytree(checkpoint_path, dest_path)
+
+    update_meta_data(Configuration.tuning_checkpoints_dir, dest_path)
+
+
+def update_meta_data(tuning_checkpoints_dir, checkpoint_dir):
+    tuning_keeper = CheckpointKeeper(tuning_checkpoints_dir)
+    meta_data = tuning_keeper.get_latest_meta_data()
+    meta_data["epoch"] = 0
+
+    # todo: change extension to json
+    meta_path = os.path.join(checkpoint_dir, "metadata.txt")
+    meta_json = json.dumps(meta_data)
+    with open(meta_path, "w") as f:
+        f.write(meta_json)
 
 
 def tuning_checkpoint_exists():

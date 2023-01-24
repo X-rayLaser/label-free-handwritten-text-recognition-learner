@@ -82,7 +82,7 @@ def fine_tune():
     predictor = PseudoLabelPredictor(env.tokenizer, env.threshold, env.pseudo_labels_path)
 
     starting_epoch = env.get_trained_epochs() + 1
-    for epoch in range(starting_epoch, starting_epoch + env.tuning_epochs):
+    for epoch in range(starting_epoch, env.tuning_epochs):
         clear_pseudo_labels(env.pseudo_labels_path)
         with torch.no_grad():
             predict_labels(env.unlabeled_loader, env.recognizer, predictor)
