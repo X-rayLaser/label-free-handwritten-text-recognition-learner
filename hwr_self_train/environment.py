@@ -260,7 +260,7 @@ class TuningEnvironment:
         keeper.make_new_checkpoint(self.neural_pipeline, Configuration.device, epoch, metrics)
 
     def get_trained_epochs(self):
-        keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+        keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
         meta_data = keeper.get_latest_meta_data()
         return meta_data["epoch"]
 
