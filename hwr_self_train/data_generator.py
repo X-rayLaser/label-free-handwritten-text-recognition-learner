@@ -6,16 +6,10 @@ from torchvision import transforms
 
 
 class SimpleRandomWordGenerator:
-    def __init__(self, dictionary, font_dir, font_size_range=(64, 64),
+    def __init__(self, word_sampler, font_dir, font_size_range=(64, 64),
                  bg_range=(240, 255), color_range=(0, 15), stroke_width_range=(0, 2),
-                 stroke_fill_range=(0, 15), rotation_range=(0, 0), max_word_len=14):
-        if isinstance(dictionary, list):
-            self.dictionary = dictionary
-        else:
-            with open(dictionary) as f:
-                self.dictionary = [word.strip() for word in f
-                                   if word.strip() and len(word.strip()) <= max_word_len]
-
+                 stroke_fill_range=(0, 15), rotation_range=(0, 0)):
+        self.sampler = word_sampler
         self.font_dir = font_dir
         self.font_files = [os.path.join(font_dir, font_file) for font_file in os.listdir(font_dir)]
 
@@ -28,10 +22,12 @@ class SimpleRandomWordGenerator:
 
     def __iter__(self):
         while True:
+            word = self.sampler()
+
             font_size = random.randint(*self.font_size_range)
             font_file = random.choice(self.font_files)
             font = ImageFont.truetype(font_file, size=font_size)
-            word = random.choice(self.dictionary)
+
             background = random.randint(*self.bg_range)
             color = random.randint(*self.color_range)
             stroke_fill = random.randint(*self.stroke_fill_range)

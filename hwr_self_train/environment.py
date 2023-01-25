@@ -34,9 +34,6 @@ from configuration import (
     create_optimizer
 )
 
-from hwr_self_train.training import ConsistencyTrainer
-from hwr_self_train.augmentation import WeakAugmentation, StrongAugmentation
-
 
 def create_neural_pipeline(device):
     encoder = ImageEncoder(image_height=Configuration.image_height,
@@ -184,7 +181,7 @@ class Environment:
     def _create_data_loader(self, dataset_class, dataset_size):
         ds = dataset_class(
             Configuration.fonts_dir, dataset_size,
-            dict_file=Configuration.dictionary_file
+            word_sampler=Configuration.word_sampler
         )
 
         return DataLoader(ds, batch_size=Configuration.batch_size,

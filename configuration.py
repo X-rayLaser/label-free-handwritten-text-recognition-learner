@@ -7,6 +7,7 @@ from hwr_self_train.loss_functions import MaskedCrossEntropy
 from hwr_self_train.loss_functions import LossTargetTransform
 from hwr_self_train.metrics import Metric
 from hwr_self_train.training import get_simple_trainer, get_consistency_trainer
+from hwr_self_train.word_samplers import UniformSampler, FrequencyBasedSampler
 
 tokenizer = CharacterTokenizer()
 
@@ -45,7 +46,9 @@ class Configuration:
     confidence_threshold = 0.4
 
     fonts_dir = './fonts'
-    dictionary_file = 'words.txt'
+
+    word_sampler = FrequencyBasedSampler.from_file("word_frequencies.csv")
+
     training_set_size = 50000
     validation_set_size = 2500
 

@@ -5,12 +5,12 @@ from .data_generator import SimpleRandomWordGenerator
 
 
 class SyntheticOnlineDataset(Dataset):
-    def __init__(self, fonts_dir, size, dict_file):
+    def __init__(self, fonts_dir, size, word_sampler):
         super().__init__()
         self.size = size
         self.fonts_dir = fonts_dir
 
-        simple_generator = SimpleRandomWordGenerator(dict_file, self.fonts_dir,
+        simple_generator = SimpleRandomWordGenerator(word_sampler, self.fonts_dir,
                                                      bg_range=(255, 255),
                                                      color_range=(0, 100),
                                                      font_size_range=(50, 100), rotation_range=(0, 0))
@@ -31,8 +31,8 @@ class SyntheticOnlineDataset(Dataset):
 
 
 class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
-    def __init__(self, fonts_dir, size, dict_file):
-        super().__init__(fonts_dir, size, dict_file)
+    def __init__(self, fonts_dir, size, word_sampler):
+        super().__init__(fonts_dir, size, word_sampler)
 
         self.cache = {}
 
@@ -41,24 +41,6 @@ class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
             self.cache[idx] = super().__getitem__(idx)
 
         return self.cache[idx]
-
-
-class SyntheticDataset:
-    def __init__(self, path):
-        self.root_path = path
-        self.files = os.listdir(path)
-
-    def __getitem__(self, idx):
-        file_name = self.files[idx]
-        path = os.path.join(self.root_path, file_name)
-        transcript, _ = os.path.splitext(file_name)
-        transcript = transcript.split('_')[0]
-
-        image = Image.open(path)
-        return image, transcript
-
-    def __len__(self):
-        return len(self.files)
 
 
 class IAMWordsDataset(Dataset):
