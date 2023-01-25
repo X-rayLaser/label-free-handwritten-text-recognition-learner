@@ -29,7 +29,7 @@ def save_distr(words, destination):
         writer = csv.writer(csvfile, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
-        for word in fdist.elements():
+        for word in fdist.keys():
             p = fdist.freq(word)
             writer.writerow([word, p])
 

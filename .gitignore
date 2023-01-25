@@ -8,3 +8,4 @@ tuning_checkpoints/
 iam/
 pretrain_history.csv
 words.txt
+word_frequencies.csv
