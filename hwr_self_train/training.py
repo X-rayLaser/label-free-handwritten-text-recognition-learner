@@ -14,7 +14,7 @@ from hwr_self_train.augmentation import WeakAugmentation, StrongAugmentation
 def print_metrics(computed_metrics, epoch):
     formatter = Formatter()
 
-    final_metrics_string = formatter.format_metrics(computed_metrics, validation=False)
+    final_metrics_string = formatter.format_metrics(computed_metrics)
 
     epoch_str = formatter.format_epoch(epoch)
 

@@ -5,11 +5,7 @@ class Formatter:
     def format_epoch(self, epoch):
         return f'Epoch {epoch:5}'
 
-    def format_metrics(self, metrics, validation=False):
-        # todo: seems method is never called with validation flag=True
-        if validation:
-            metrics = {f'val {k}': v for k, v in metrics.items()}
-
+    def format_metrics(self, metrics):
         metric_strings = [f'{name} {value:6.4f}' for name, value in metrics.items()]
         s = ', '.join(metric_strings)
         return f'[{s}]'
