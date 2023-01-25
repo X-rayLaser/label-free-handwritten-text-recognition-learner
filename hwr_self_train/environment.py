@@ -181,7 +181,8 @@ class Environment:
     def _create_data_loader(self, dataset_class, dataset_size):
         ds = dataset_class(
             Configuration.fonts_dir, dataset_size,
-            word_sampler=Configuration.word_sampler
+            word_sampler=Configuration.word_sampler,
+            **Configuration.data_generator_options
         )
 
         return DataLoader(ds, batch_size=Configuration.batch_size,

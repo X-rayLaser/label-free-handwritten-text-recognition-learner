@@ -49,6 +49,13 @@ class Configuration:
 
     word_sampler = FrequencyBasedSampler.from_file("word_frequencies.csv")
 
+    data_generator_options = dict(
+        bg_range=(255, 255),
+        color_range=(0, 100),
+        font_size_range=(50, 100),
+        rotation_range=(0, 0)
+    )
+
     training_set_size = 50000
     validation_set_size = 2500
 

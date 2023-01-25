@@ -1,19 +1,23 @@
-import os
 from PIL import Image
 from torch.utils.data import Dataset
 from .data_generator import SimpleRandomWordGenerator
 
 
 class SyntheticOnlineDataset(Dataset):
-    def __init__(self, fonts_dir, size, word_sampler):
+    def __init__(self, fonts_dir, size, word_sampler,
+                 bg_range=(255, 255),
+                 color_range=(0, 100),
+                 font_size_range=(50, 100),
+                 rotation_range=(0, 0)):
         super().__init__()
         self.size = size
         self.fonts_dir = fonts_dir
 
         simple_generator = SimpleRandomWordGenerator(word_sampler, self.fonts_dir,
-                                                     bg_range=(255, 255),
-                                                     color_range=(0, 100),
-                                                     font_size_range=(50, 100), rotation_range=(0, 0))
+                                                     bg_range=bg_range,
+                                                     color_range=color_range,
+                                                     font_size_range=font_size_range,
+                                                     rotation_range=rotation_range)
         self.iterator = iter(simple_generator)
 
     def __getitem__(self, idx):
@@ -31,8 +35,13 @@ class SyntheticOnlineDataset(Dataset):
 
 
 class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
-    def __init__(self, fonts_dir, size, word_sampler):
-        super().__init__(fonts_dir, size, word_sampler)
+    def __init__(self, fonts_dir, size, word_sampler, bg_range=(255, 255),
+                 color_range=(0, 100), font_size_range=(50, 100), rotation_range=(0, 0)):
+        super().__init__(fonts_dir, size, word_sampler,
+                         bg_range=bg_range,
+                         color_range=color_range,
+                         font_size_range=font_size_range,
+                         rotation_range=rotation_range)
 
         self.cache = {}
 
