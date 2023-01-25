@@ -64,5 +64,7 @@ if __name__ == '__main__':
 
     all_words = gutenberg.words() if args.gutenberg else load_words(args.dict_file)
 
+    filtered_words = filter_words(all_words, args.only_letters)
+
     save_func = save_distr if args.with_freq else save_dict_file
-    save_func(all_words, args.output_file)
+    save_func(filtered_words, args.output_file)
