@@ -1,7 +1,6 @@
 import os
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision.transforms import Resize
 from .data_generator import SimpleRandomWordGenerator
 
 

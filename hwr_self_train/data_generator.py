@@ -1,8 +1,7 @@
-from PIL import Image, ImageDraw, ImageFont
-import time
-
 import os
 import random
+
+from PIL import Image, ImageDraw, ImageFont
 from torchvision import transforms
 
 
@@ -76,17 +75,3 @@ class SimpleRandomWordGenerator:
             return image
 
 
-if __name__ == '__main__':
-    # simple benchmark
-    word_gen = SimpleRandomWordGenerator("examples/htr_self_training/words.txt",
-                                         "examples/htr_self_training/fonts", font_size_range=(58, 70), rotation_range=(-10, 10))
-
-    it = iter(word_gen)
-    t = time.time()
-
-    for i in range(1000):
-        im, tr = next(it)
-        #print(tr)
-        #im.show()
-    im.show()
-    print(time.time() - t, (time.time() - t) / 100 / 10)
