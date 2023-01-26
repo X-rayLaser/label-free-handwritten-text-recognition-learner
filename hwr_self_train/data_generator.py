@@ -47,7 +47,7 @@ class SimpleRandomWordGenerator:
         char_size = size
         num_chars = len(word)
         width = char_size * num_chars + padding * 2
-        height = size + 20 + padding * 2
+        height = size * 2 + 20 + padding * 2
 
         min_degrees, max_degrees = self.rotation_range
         rotate = transforms.RandomRotation(degrees=[min_degrees, max_degrees], expand=True, fill=background)
