@@ -18,12 +18,20 @@ class UniformSampler:
 
 
 class FrequencyBasedSampler:
-    def __init__(self, words, frequencies):
+    def __init__(self, words, frequencies, sampling_batch_size=1024):
         self.words = words
         self.frequencies = frequencies
+        self.rng = np.random.default_rng()
+
+        self.batch_size = sampling_batch_size
+        self.buffer = []
 
     def __call__(self):
-        return np.random.choice(self.words, p=self.frequencies)
+        if not self.buffer:
+            self.buffer = list(self.rng.choice(self.words, size=self.batch_size,
+                                               p=self.frequencies))
+
+        return self.buffer.pop()
 
     @classmethod
     def from_file(cls, path):
