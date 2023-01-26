@@ -5,6 +5,7 @@ venv/
 fonts/
 checkpoints/
 tuning_checkpoints/
+corpora/
 iam/
 pretrain_history.csv
 words.txt
