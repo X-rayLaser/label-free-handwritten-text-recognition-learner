@@ -25,14 +25,18 @@ def add_padding(seq, size, filler):
     return seq
 
 
-def pad_sequences(seqs, filler):
+def pad_sequences(seqs, filler, max_length=None):
     lengths = [len(seq) for seq in seqs]
-    max_length = max(lengths)
+    max_length = max_length or max(lengths)
 
     mask = Mask(lengths, max_length)
 
     padded = [add_padding(seq, max_length, filler) for seq in seqs]
     return padded, mask
+
+
+def truncate_sequences(seqs, max_length):
+    return [s[:max_length] for s in seqs]
 
 
 def prepare_tf_seqs(transcripts, tokenizer):

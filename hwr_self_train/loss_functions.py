@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from .utils import prepare_targets, pad_sequences
+from .utils import prepare_targets, pad_sequences, truncate_sequences
 
 
 class MaskedCrossEntropy:
@@ -58,6 +58,14 @@ class LossTargetTransform:
         tokens = prepare_targets(transcripts, self.tokenizer)
 
         filler = tokens[0][-1]
-        seqs, mask = pad_sequences(tokens, filler)
+
+        prediction_num_steps = y_hat.shape[1]
+
+        max_transcript_len = max(len(token_seq) for token_seq in tokens)
+
+        if max_transcript_len > prediction_num_steps:
+            tokens = truncate_sequences(tokens, prediction_num_steps)
+
+        seqs, mask = pad_sequences(tokens, filler, max_length=prediction_num_steps)
         target = torch.LongTensor(seqs)
         return [y_hat] + [target] + [mask]

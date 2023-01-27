@@ -149,18 +149,22 @@ class Environment:
         self.history_saver = HistoryCsvSaver(Configuration.history_path)
 
         eval_on_train = EvaluationTask(recognizer, training_loader, train_metric_fns,
-                                       Configuration.evaluation_steps['training_set'])
+                                       Configuration.evaluation_steps['training_set'],
+                                       close_loop_prediction=False)
 
         eval_on_train_val = EvaluationTask(recognizer, val_loader, train_val_metric_fns,
-                                           Configuration.evaluation_steps['train_validation_set'])
+                                           Configuration.evaluation_steps['train_validation_set'],
+                                           close_loop_prediction=False)
 
         val_preprocessor = make_validation_pipeline(max_heights=Configuration.image_height)
         val_recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, val_preprocessor)
         eval_on_val = EvaluationTask(val_recognizer, val_loader, val_metric_fns,
-                                     Configuration.evaluation_steps['validation_set'])
+                                     Configuration.evaluation_steps['validation_set'],
+                                     close_loop_prediction=True)
 
         eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
-                                      num_batches=Configuration.evaluation_steps['test_set'])
+                                      num_batches=Configuration.evaluation_steps['test_set'],
+                                      close_loop_prediction=True)
         self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val, eval_on_test]
 
     def save_checkpoint(self, epoch, metrics):
@@ -220,6 +224,13 @@ class TuningEnvironment:
 
         eval_steps = Configuration.evaluation_steps
 
+        eval_on_train_ds = EvaluationTask(recognizer, training_loader, metric_fns,
+                                          num_batches=eval_steps["training_set"],
+                                          close_loop_prediction=True)
+        eval_on_test_ds = EvaluationTask(recognizer, test_loader, test_metrics,
+                                         num_batches=eval_steps["test_set"],
+                                         close_loop_prediction=True)
+
         self.pseudo_labeled_dataset = pseudo_labeled_dataset
         self.pseudo_labeled_loader = pseudo_labeled_loader
         self.unlabeled_loader = unlabeled_loader
@@ -231,10 +242,7 @@ class TuningEnvironment:
         self.recognizer = recognizer
         self.metric_fns = metric_fns
 
-        self.tasks = [EvaluationTask(recognizer, training_loader, self.metric_fns,
-                                     num_batches=eval_steps["training_set"]),
-                      EvaluationTask(recognizer, test_loader, test_metrics,
-                                     num_batches=eval_steps["test_set"])]
+        self.tasks = [eval_on_train_ds, eval_on_test_ds]
 
         self.history_saver = HistoryCsvSaver(Configuration.tuning_history_path)
 

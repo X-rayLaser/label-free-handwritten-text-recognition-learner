@@ -44,8 +44,10 @@ def evaluate(task, supress_errors=True):
                 break
 
             try:
-                # todo: add flag to decide whether to evaluate with or without passing transcripts
-                y_hat = recognizer(images, transcripts)
+                if task.close_loop_prediction:
+                    y_hat = recognizer(images)
+                else:
+                    y_hat = recognizer(images, transcripts)
             except torch.cuda.OutOfMemoryError:
                 if not supress_errors:
                     raise
@@ -62,4 +64,5 @@ def evaluate(task, supress_errors=True):
 
 
 EvaluationTask = namedtuple('EvaluationTask',
-                            ['recognizer', 'data_loader', 'metric_functions', 'num_batches'])
+                            ['recognizer', 'data_loader', 'metric_functions',
+                             'num_batches', 'close_loop_prediction'])

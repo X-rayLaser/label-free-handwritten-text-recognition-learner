@@ -180,7 +180,7 @@ class AttendingDecoder(nn.Module):
         # initializing attention weights (higher values on the left end, lower ones on the right end)
         attention_weights = self.attention.initial_attention_weights(batch_size, num_embeddings, device=encodings.device)
 
-        for t in range(0, num_steps):
+        for t in range(num_steps):
             y_hat_prev = y_shifted[:, t, :]
             log_pmf, decoder_hidden, attention_weights = self.predict_next(
                 decoder_hidden, encodings, attention_weights, y_hat_prev
@@ -205,6 +205,8 @@ class AttendingDecoder(nn.Module):
         Returns both predicted sequence of tokens and list of attention weight tensors,
         one tensor for each predicted token
         """
+
+        # todo: consider to remove sos from the output (teacher forcing forward seems not to include it)
         outputs = [sos]
 
         y_hat_prev = sos
