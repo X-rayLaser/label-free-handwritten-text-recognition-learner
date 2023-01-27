@@ -27,6 +27,7 @@ class FrequencyBasedSampler:
         self.buffer = []
 
     def __call__(self):
+        # todo: potential race condition when using data loaders with num_workers > 0
         if not self.buffer:
             self.buffer = list(self.rng.choice(self.words, size=self.batch_size,
                                                p=self.frequencies))

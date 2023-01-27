@@ -1,8 +1,12 @@
 import os
 import random
+import logging
 
 from PIL import Image, ImageDraw, ImageFont
 from torchvision import transforms
+
+
+logger = logging.getLogger(__name__)
 
 
 class SimpleRandomWordGenerator:
@@ -39,7 +43,13 @@ class SimpleRandomWordGenerator:
                 if image.height > 0 and image.width > 0:
                     yield image, word
             except Exception:
-                pass
+                msg = 'Failed to create image for "{}": font "{}", font size {}, ' \
+                      'background {}, color {}, stroke width {} stroke fill {}'
+
+                # todo: this is wrong when using extra worker processes in dataloader
+                logger.exception(msg.format(
+                    word, font_file, font_size, background, color, stroke_width, stroke_fill
+                ))
 
     def create_image(self, word, font, size=64, background=255, color=0,
                      stroke_width=1, stroke_fill=0):
@@ -56,10 +66,14 @@ class SimpleRandomWordGenerator:
             draw = ImageDraw.Draw(image)
             bbox = draw.textbbox((padding, padding), word, font=font)
             draw.rectangle((0, 0, image.width, image.height), fill=background)
-            draw.text((padding, padding), word, fill=color, font=font, stroke_width=stroke_width, stroke_fill=stroke_fill)
+            draw.text((padding, padding), word, fill=color, font=font,
+                      stroke_width=stroke_width, stroke_fill=stroke_fill)
 
             x0, y0, x, y = bbox
-            padded_bbox = (max(0, x0 - padding), max(0, y0 - padding), min(width, x + padding), min(height, y + padding))
+            padded_bbox = (max(0, x0 - padding),
+                           max(0, y0 - padding),
+                           min(width, x + padding),
+                           min(height, y + padding))
 
             shear_x = transforms.RandomAffine(0, shear=(-10, 30), fill=background)
 

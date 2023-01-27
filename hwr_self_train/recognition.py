@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Any
 
@@ -6,6 +7,9 @@ from hwr_self_train.utils import make_tf_batch
 from .preprocessors import CharacterTokenizer
 from .image_pipelines import ImagePipeline
 from .models import ImageEncoder, AttendingDecoder
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -62,6 +66,22 @@ class WordRecognitionPipeline:
 
     def __call__(self, images, transcripts=None):
         """Given a list of PIL images and (optionally) corresponding list of text transcripts"""
+        return self._try_recognize(images, transcripts)
+
+    def _try_recognize(self, images, transcripts):
+        try:
+            return self._do_recognize(images, transcripts)
+        except torch.cuda.OutOfMemoryError:
+            widths_with_transcripts = [(im.width, t)
+                                       for im, t in zip(images, transcripts)]
+            largest_pair = max(widths_with_transcripts, key=lambda pair: pair[0])
+
+            logger.exception('Recognition failed: out of memory.'
+                             'Longest image width {}. '
+                             'image transcript "{}"'.format(*largest_pair))
+            raise
+
+    def _do_recognize(self, images, transcripts):
         image_batch = self.image_preprocessor(images)
 
         if transcripts is not None:
