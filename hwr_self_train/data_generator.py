@@ -15,7 +15,8 @@ class SimpleRandomWordGenerator:
                  stroke_fill_range=(0, 15), rotation_range=(0, 0)):
         self.sampler = word_sampler
         self.font_dir = font_dir
-        self.font_files = [os.path.join(font_dir, font_file) for font_file in os.listdir(font_dir)]
+        self.font_files = [os.path.join(font_dir, font_file) for font_file in os.listdir(font_dir)
+                           if font_file.endswith('.otf') or font_file.endswith('.ttf')]
 
         self.font_size_range = font_size_range
         self.bg_range = bg_range

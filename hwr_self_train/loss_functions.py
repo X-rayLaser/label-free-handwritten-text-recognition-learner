@@ -63,6 +63,8 @@ class LossTargetTransform:
 
         max_transcript_len = max(len(token_seq) for token_seq in tokens)
 
+        # todo: consider truncating the tensor along steps dim instead
+        #  (to the length of longest transcript)
         if max_transcript_len > prediction_num_steps:
             tokens = truncate_sequences(tokens, prediction_num_steps)
 
