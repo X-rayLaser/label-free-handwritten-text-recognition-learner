@@ -58,16 +58,20 @@ class SimpleRandomWordGenerator:
         char_size = size
         num_chars = len(word)
         width = char_size * num_chars + padding * 2
-        height = size * 2 + 20 + padding * 2
+
+        vertical_offset = 25
+        height = size * 2 + 20 + padding * 2 + vertical_offset * 2
 
         min_degrees, max_degrees = self.rotation_range
         rotate = transforms.RandomRotation(degrees=[min_degrees, max_degrees], expand=True, fill=background)
 
         with Image.new("L", (width, height)) as image:
             draw = ImageDraw.Draw(image)
-            bbox = draw.textbbox((padding, padding), word, font=font)
+
+            # give extra vertical space (at least 25 pixels from top and bottom)
+            bbox = draw.textbbox((padding, vertical_offset), word, font=font)
             draw.rectangle((0, 0, image.width, image.height), fill=background)
-            draw.text((padding, padding), word, fill=color, font=font,
+            draw.text((padding, vertical_offset), word, fill=color, font=font,
                       stroke_width=stroke_width, stroke_fill=stroke_fill)
 
             x0, y0, x, y = bbox
