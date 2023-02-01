@@ -28,7 +28,11 @@ from .evaluation import EvaluationTask
 
 from configuration import (
     tokenizer,
-    Configuration,
+    Configuration
+)
+
+
+from .config_utils import (
     prepare_metrics,
     prepare_loss,
     create_optimizer
@@ -269,5 +273,3 @@ class TuningEnvironment:
         keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
         meta_data = keeper.get_latest_meta_data()
         return meta_data["epoch"]
-
-

@@ -4,7 +4,7 @@ import numpy as np
 
 
 class UniformSampler:
-    def __init__(self, words, max_word_len=14):
+    def __init__(self, words):
         self.words = words
 
     def __call__(self):

@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
 from torchvision.models import vgg19_bn
 from .preprocessors import CharacterTokenizer
 
@@ -19,7 +18,7 @@ class ImageEncoder(nn.Module):
     def __init__(self, image_height, hidden_size):
         super().__init__()
 
-        out_feature_maps = 512 # vgg outputs 512 feature maps
+        out_feature_maps = 512  # vgg outputs 512 feature maps
         feature_height = image_height // 2**5
         input_size = feature_height * out_feature_maps
         self.hidden_size = hidden_size
@@ -178,7 +177,9 @@ class AttendingDecoder(nn.Module):
         outputs = []
 
         # initializing attention weights (higher values on the left end, lower ones on the right end)
-        attention_weights = self.attention.initial_attention_weights(batch_size, num_embeddings, device=encodings.device)
+        attention_weights = self.attention.initial_attention_weights(
+            batch_size, num_embeddings, device=encodings.device
+        )
 
         for t in range(num_steps):
             y_hat_prev = y_shifted[:, t, :]
@@ -250,21 +251,6 @@ class AttendingDecoder(nn.Module):
         h, hidden = self.decoder_gru(v, decoder_hidden)
         h = h.squeeze(1)
         return self.linear(h), hidden, new_attention_weights
-
-
-def build_encoder(session, *args, **kwargs):
-    return ImageEncoder(*args, **kwargs)
-
-
-def build_decoder(session):
-    encoder_model = next(iter(session.models.values()))
-    context_size = encoder_model.hidden_size * 2
-    decoder_hidden_size = encoder_model.hidden_size
-
-    tokenizer = session.preprocessors["tokenize"]
-    sos_token = tokenizer.char2index[tokenizer.start]
-    return AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
-                            hidden_size=decoder_hidden_size)
 
 
 def build_networks(image_height=64, hidden_size=128):

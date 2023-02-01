@@ -88,5 +88,3 @@ class SimpleRandomWordGenerator:
             if self.rotation_range != (0, 0):
                 image = rotate(image)
             return image
-
-

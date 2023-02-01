@@ -16,7 +16,7 @@ def prepare_iam_dataset(iam_location, output_dir, max_words=None, train_fraction
     val_file = os.path.join(output_dir, 'iam_val.txt')
 
     pseudo_labels_file = os.path.join(output_dir, 'pseudo_labels.txt')
-    with open(pseudo_labels_file, 'w') as f:
+    with open(pseudo_labels_file, 'w') as _:
         pass
 
     paths_with_transcripts = parse_examples(iam_location, words_dir, max_words, only_letters)

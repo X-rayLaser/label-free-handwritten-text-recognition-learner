@@ -128,7 +128,7 @@ def get_simple_trainer(recognizer, loader, loss_fn, tokenizer, **kwargs):
 
 
 def get_consistency_trainer(recognizer, loader, loss_fn, tokenizer,
-                               **weak_augment_options):
+                            **weak_augment_options):
     weak_augment = WeakAugmentation(**weak_augment_options)
     strong_augment = StrongAugmentation()
     return ConsistencyTrainer(recognizer, loader, loss_fn, tokenizer,

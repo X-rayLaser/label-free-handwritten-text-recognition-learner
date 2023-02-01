@@ -50,5 +50,5 @@ if __name__ == '__main__':
     parser.add_argument('--max-fonts', type=int, default=0,
                         help='Number of fonts to visualize. By default, visualize all')
 
-    args = parser.parse_args()
-    generate_images(args)
+    cli_args = parser.parse_args()
+    generate_images(cli_args)

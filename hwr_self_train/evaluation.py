@@ -9,9 +9,6 @@ def evaluate(task, supress_errors=True):
     """Compute metrics.
 
     :param task: instance of EvaluationTask
-    :param num_batches: Number of batches used to compute metrics on.
-    Integer value is interpreted as precise number batches.
-    Floating point number in 0-1 range is interpreted as a fraction of all batches in the pipeline.
     :param supress_errors: When set to True (by default), it will silently catch exceptions
     such as torch.cuda.OutOfMemoryError. Otherwise, exceptions will propagate to the caller.
     :return: a dictionary mapping names of metrics to their computed values

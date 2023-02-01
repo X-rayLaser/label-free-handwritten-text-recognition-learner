@@ -39,7 +39,7 @@ class PseudoLabelPredictor:
 
 
 def clear_pseudo_labels(pseudo_labels_path):
-    with open(pseudo_labels_path, "w") as f:
+    with open(pseudo_labels_path, "w") as _:
         pass
 
 
