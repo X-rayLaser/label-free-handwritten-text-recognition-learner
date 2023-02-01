@@ -1,4 +1,5 @@
 import string
+import os
 
 import torch
 from torch.optim import Adam
@@ -101,11 +102,7 @@ class Configuration:
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    checkpoints_save_dir = 'checkpoints'
-    tuning_checkpoints_dir = 'tuning_checkpoints'
-
-    history_path = 'pretrain_history.csv'
-    tuning_history_path = 'tuning_history.csv'
+    session_dir = 'session'
 
     evaluation_steps = {
         'training_set': 0.1,

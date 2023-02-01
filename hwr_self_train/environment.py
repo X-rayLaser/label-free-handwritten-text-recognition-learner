@@ -20,6 +20,7 @@ from .datasets import (
 
 from .checkpoints import (
     CheckpointKeeper,
+    SessionDirectoryLayout,
     CheckpointsNotFound
 )
 from .training import TrainingLoop, Trainer
@@ -33,6 +34,9 @@ from .config_utils import (
     prepare_loss,
     create_optimizer
 )
+
+
+session_layout = SessionDirectoryLayout(Configuration.session_dir)
 
 
 def create_neural_pipeline(device, tokenizer):
@@ -61,7 +65,7 @@ def load_or_create_neural_pipeline(tokenizer):
     """
     neural_pipeline = create_neural_pipeline(Configuration.device, tokenizer)
 
-    keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+    keeper = CheckpointKeeper(session_layout.checkpoints)
 
     try:
         keeper.load_latest_checkpoint(neural_pipeline, Configuration.device)
@@ -69,7 +73,7 @@ def load_or_create_neural_pipeline(tokenizer):
     except CheckpointsNotFound:
         # since checkpoints do not exist, assume that we start from scratch,
         # therefore we remove existing history file
-        remove_history(Configuration.history_path)
+        session_layout.remove_history()
 
         neural_pipeline.encoder.to(neural_pipeline.device)
         neural_pipeline.decoder.to(neural_pipeline.device)
@@ -77,40 +81,11 @@ def load_or_create_neural_pipeline(tokenizer):
         return neural_pipeline
 
 
-def remove_history(history_path):
-    if os.path.isfile(history_path):
-        os.remove(history_path)
-
-
-def create_tuning_checkpoint():
-    """Copy checkpoint of a pretrained model into a directory for tuning checkpoints"""
-    keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
-    checkpoint_path = keeper.get_latest_checkpoint_dir()
-    dest_path = os.path.join(Configuration.tuning_checkpoints_dir, '0')
-    shutil.copytree(checkpoint_path, dest_path)
-
-    update_meta_data(Configuration.tuning_checkpoints_dir, dest_path)
-
-
-def update_meta_data(tuning_checkpoints_dir, checkpoint_dir):
-    tuning_keeper = CheckpointKeeper(tuning_checkpoints_dir)
-    meta_data = tuning_keeper.get_latest_meta_data()
-    meta_data["epoch"] = 0
-
-    # todo: change extension to json
-    meta_path = os.path.join(checkpoint_dir, "metadata.txt")
-    meta_json = json.dumps(meta_data)
-    with open(meta_path, "w") as f:
-        f.write(meta_json)
-
-
-def tuning_checkpoint_exists():
-    path = os.path.join(Configuration.tuning_checkpoints_dir, '0')
-    return os.path.exists(path)
-
-
 class Environment:
     def __init__(self):
+        if not os.path.exists(session_layout.session):
+            os.makedirs(session_layout.session)
+
         self._make_checkpoints_dir()
 
         tokenizer = Configuration.tokenizer
@@ -147,7 +122,7 @@ class Environment:
                                           epochs=Configuration.epochs,
                                           starting_epoch=self.epochs_trained + 1)
 
-        self.history_saver = HistoryCsvSaver(Configuration.history_path)
+        self.history_saver = HistoryCsvSaver(session_layout.history)
 
         eval_on_train = EvaluationTask(recognizer, training_loader, train_metric_fns,
                                        Configuration.evaluation_steps['training_set'],
@@ -169,19 +144,19 @@ class Environment:
         self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val, eval_on_test]
 
     def save_checkpoint(self, epoch, metrics):
-        keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+        keeper = CheckpointKeeper(session_layout.checkpoints)
         keeper.make_new_checkpoint(self.neural_pipeline, Configuration.device, epoch, metrics)
 
     def _get_trained_epochs(self):
         try:
-            keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
+            keeper = CheckpointKeeper(session_layout.checkpoints)
             meta_data = keeper.get_latest_meta_data()
             return meta_data["epoch"]
         except CheckpointsNotFound:
             return 0
 
     def _make_checkpoints_dir(self):
-        os.makedirs(Configuration.checkpoints_save_dir, exist_ok=True)
+        os.makedirs(session_layout.checkpoints, exist_ok=True)
 
     def _create_data_loader(self, dataset_class, dataset_size):
         ds = dataset_class(
@@ -208,13 +183,11 @@ class TuningEnvironment:
         unlabeled_ds = UnlabeledDataset(Configuration.iam_train_path)
         unlabeled_loader = self._create_loader(unlabeled_ds)
 
-        if not tuning_checkpoint_exists():
-            create_tuning_checkpoint()
-            remove_history(Configuration.tuning_history_path)
+        session_layout.create_tuning_checkpoint()
 
         tokenizer = Configuration.tokenizer
         encoder_decoder = create_neural_pipeline(Configuration.device, tokenizer)
-        keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
+        keeper = CheckpointKeeper(session_layout.tuning_checkpoints)
         keeper.load_latest_checkpoint(encoder_decoder, Configuration.device)
 
         image_preprocessor = make_validation_pipeline(max_heights=Configuration.image_height)
@@ -246,7 +219,7 @@ class TuningEnvironment:
 
         self.tasks = [eval_on_train_ds, eval_on_test_ds]
 
-        self.history_saver = HistoryCsvSaver(Configuration.tuning_history_path)
+        self.history_saver = HistoryCsvSaver(session_layout.tuning_history)
 
     def _create_loader(self, ds):
         return DataLoader(ds,
@@ -267,10 +240,10 @@ class TuningEnvironment:
             **Configuration.weak_augment_options)
 
     def save_checkpoint(self, epoch, metrics):
-        keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
+        keeper = CheckpointKeeper(session_layout.tuning_checkpoints)
         keeper.make_new_checkpoint(self.neural_pipeline, Configuration.device, epoch, metrics)
 
     def get_trained_epochs(self):
-        keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
+        keeper = CheckpointKeeper(session_layout.tuning_checkpoints)
         meta_data = keeper.get_latest_meta_data()
         return meta_data["epoch"]

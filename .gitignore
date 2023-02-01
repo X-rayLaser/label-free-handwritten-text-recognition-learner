@@ -9,6 +9,7 @@ tuning_checkpoints/
 corpora/
 iam/
 temp/
+session/
 pretrain_history.csv
 words.txt
 word_frequencies.csv

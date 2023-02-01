@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 import torch
 
@@ -147,6 +148,58 @@ class SessionState:
     @property
     def decoder_optimizer(self):
         return self.state_dict["optimizers"]["decoder_optimizer"]
+
+
+class SessionDirectoryLayout:
+    def __init__(self, session_dir):
+        self.session = session_dir
+
+        self.checkpoints = os.path.join(session_dir, "checkpoints")
+        self.tuning_checkpoints = os.path.join(session_dir, "tuning_checkpoints")
+
+        self.history = os.path.join(session_dir, "history.csv")
+        self.tuning_history = os.path.join(session_dir, "tuning_history.csv")
+
+    def remove_history(self):
+        self._remove_history_file(self.history)
+
+    def remove_tuning_history(self):
+        self._remove_history_file(self.tuning_history)
+
+    def tuning_checkpoint_exists(self):
+        path = os.path.join(self.tuning_checkpoints, '0')
+        return os.path.exists(path)
+
+    def create_tuning_checkpoint(self):
+        """Copy checkpoint of a pretrained model into a directory for tuning checkpoints
+        (only if this hasn't been already done)
+        """
+        if self.tuning_checkpoint_exists():
+            return
+
+        keeper = CheckpointKeeper(self.checkpoints)
+        checkpoint_path = keeper.get_latest_checkpoint_dir()
+        dest_path = os.path.join(self.tuning_checkpoints, '0')
+        shutil.copytree(checkpoint_path, dest_path)
+
+        self.update_meta_data(dest_path)
+
+        self.remove_tuning_history()
+
+    def update_meta_data(self, checkpoint_dir):
+        tuning_keeper = CheckpointKeeper(self.tuning_checkpoints)
+        meta_data = tuning_keeper.get_latest_meta_data()
+        meta_data["epoch"] = 0
+
+        # todo: change extension to json
+        meta_path = os.path.join(checkpoint_dir, "metadata.txt")
+        meta_json = json.dumps(meta_data)
+        with open(meta_path, "w") as f:
+            f.write(meta_json)
+
+    def _remove_history_file(self, history_path):
+        if os.path.isfile(history_path):
+            os.remove(history_path)
 
 
 class CheckpointsNotFound(Exception):
