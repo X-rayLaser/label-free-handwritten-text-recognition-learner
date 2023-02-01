@@ -26,11 +26,7 @@ from .training import TrainingLoop, Trainer
 from .history_saver import HistoryCsvSaver
 from .evaluation import EvaluationTask
 
-from configuration import (
-    tokenizer,
-    Configuration
-)
-
+from configuration import Configuration
 
 from .config_utils import (
     prepare_metrics,
@@ -39,7 +35,7 @@ from .config_utils import (
 )
 
 
-def create_neural_pipeline(device):
+def create_neural_pipeline(device, tokenizer):
     encoder = ImageEncoder(image_height=Configuration.image_height,
                            hidden_size=Configuration.hidden_size)
 
@@ -57,13 +53,13 @@ def create_neural_pipeline(device):
     )
 
 
-def load_or_create_neural_pipeline():
+def load_or_create_neural_pipeline(tokenizer):
     """Instantiate encoder-decoder model and restore it from checkpoint if it exists,
     otherwise create checkpoint.
 
     Returns encoder-decoder model
     """
-    neural_pipeline = create_neural_pipeline(Configuration.device)
+    neural_pipeline = create_neural_pipeline(Configuration.device, tokenizer)
 
     keeper = CheckpointKeeper(Configuration.checkpoints_save_dir)
 
@@ -117,7 +113,8 @@ class Environment:
     def __init__(self):
         self._make_checkpoints_dir()
 
-        self.neural_pipeline = load_or_create_neural_pipeline()
+        tokenizer = Configuration.tokenizer
+        self.neural_pipeline = load_or_create_neural_pipeline(tokenizer)
 
         image_pipeline = make_pretraining_pipeline(
             augmentation_options=Configuration.weak_augment_options,
@@ -215,7 +212,8 @@ class TuningEnvironment:
             create_tuning_checkpoint()
             remove_history(Configuration.tuning_history_path)
 
-        encoder_decoder = create_neural_pipeline(Configuration.device)
+        tokenizer = Configuration.tokenizer
+        encoder_decoder = create_neural_pipeline(Configuration.device, tokenizer)
         keeper = CheckpointKeeper(Configuration.tuning_checkpoints_dir)
         keeper.load_latest_checkpoint(encoder_decoder, Configuration.device)
 
@@ -261,6 +259,9 @@ class TuningEnvironment:
         loader = self._create_loader(self.pseudo_labeled_dataset)
 
         loss_fn = prepare_loss(Configuration.loss_function)
+
+        tokenizer = Configuration.tokenizer
+
         return Configuration.tuning_trainer_factory(
             self.recognizer, loader, loss_fn, tokenizer,
             **Configuration.weak_augment_options)

@@ -30,16 +30,7 @@ class CharacterTokenizer(ValuePreprocessor):
 
     english = "english"
 
-    def __init__(self, charset=None):
-        charset = charset or self.english
-
-        if charset == self.english:
-            letters = "abcdefghijklmnopqrstuvwxyz"
-            digits = "0123456789"
-            punctuation = ".,?!:;-()'\""
-            letters.upper()
-            charset = letters + letters.upper() + digits + punctuation
-
+    def __init__(self, charset):
         self.char2index = {}
         self.index2char = {}
         self.charset = charset

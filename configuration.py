@@ -1,3 +1,5 @@
+import string
+
 import torch
 from torch.optim import Adam
 from torchmetrics import CharErrorRate
@@ -8,25 +10,12 @@ from hwr_self_train.loss_functions import LossTargetTransform
 from hwr_self_train.training import get_simple_trainer, get_consistency_trainer
 from hwr_self_train.word_samplers import UniformSampler, FrequencyBasedSampler
 
-tokenizer = CharacterTokenizer()
 
-
-def decode(y_hat, y):
-    y_hat = decode_output_batch(y_hat, tokenizer)
-    return y_hat, y
-
-
-loss_conf = {
-    'class': MaskedCrossEntropy,
-    'kwargs': dict(reduction='sum', label_smoothing=0.6),
-    'transform': LossTargetTransform(tokenizer)
-}
-
-
-cer_conf = {
-    'class': CharErrorRate,
-    'transform': decode
-}
+def get_transform(tokenizer):
+    def decode(y_hat, y):
+        y_hat = decode_output_batch(y_hat, tokenizer)
+        return y_hat, y
+    return decode
 
 
 optimizer_conf = {
@@ -34,10 +23,18 @@ optimizer_conf = {
     'kwargs': dict(lr=0.0001)
 }
 
+letters = "abcdefghijklmnopqrstuvwxyz"
+digits = "0123456789"
+punctuation = ".,?!:;-()'\""
+letters.upper()
+
 
 class Configuration:
     image_height = 64
     hidden_size = 128
+
+    charset = letters + letters.upper() + digits + punctuation
+    #charset = string.ascii_letters
 
     iam_pseudo_labels = 'iam/pseudo_labels.txt'
     iam_train_path = 'iam/iam_train.txt'
@@ -60,6 +57,19 @@ class Configuration:
 
     batch_size = 32
     num_workers = 0
+
+    tokenizer = CharacterTokenizer(charset)
+
+    loss_conf = {
+        'class': MaskedCrossEntropy,
+        'kwargs': dict(reduction='sum', label_smoothing=0.6),
+        'transform': LossTargetTransform(tokenizer)
+    }
+
+    cer_conf = {
+        'class': CharErrorRate,
+        'transform': get_transform(tokenizer)
+    }
 
     loss_function = loss_conf
 

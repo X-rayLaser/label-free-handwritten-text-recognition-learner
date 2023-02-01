@@ -3,7 +3,7 @@ import argparse
 from PIL import Image
 from hwr_self_train.environment import TuningEnvironment
 from hwr_self_train.preprocessors import decode_output_batch
-from configuration import tokenizer
+from configuration import Configuration
 
 
 if __name__ == '__main__':
@@ -15,6 +15,7 @@ if __name__ == '__main__':
 
     env = TuningEnvironment()
     recognizer = env.recognizer
+    tokenizer = Configuration.tokenizer
 
     image = Image.open(args.image_path)
     label_distr = recognizer([image])

@@ -253,13 +253,13 @@ class AttendingDecoder(nn.Module):
         return self.linear(h), hidden, new_attention_weights
 
 
-def build_networks(image_height=64, hidden_size=128):
+def build_networks(charset, image_height=64, hidden_size=128):
     encoder = ImageEncoder(image_height, hidden_size)
 
     context_size = encoder.hidden_size * 2
     decoder_hidden_size = encoder.hidden_size
 
-    tokenizer = CharacterTokenizer()
+    tokenizer = CharacterTokenizer(charset)
     sos_token = tokenizer.char2index[tokenizer.start]
     decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
                                hidden_size=decoder_hidden_size)
