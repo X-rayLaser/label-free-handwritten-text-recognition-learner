@@ -50,7 +50,7 @@ class Configuration:
     word_sampler = FrequencyBasedSampler.from_file("word_frequencies.csv")
 
     data_generator_options = dict(
-        bg_range=(255, 255),
+        bg_range=(200, 255),
         color_range=(0, 100),
         font_size_range=(50, 100),
         rotation_range=(0, 0)
@@ -60,7 +60,7 @@ class Configuration:
     validation_set_size = 2500
 
     batch_size = 32
-    num_workers = 2
+    num_workers = 0
 
     loss_function = loss_conf
 
