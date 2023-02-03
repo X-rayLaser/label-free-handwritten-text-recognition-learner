@@ -34,6 +34,8 @@ class Configuration:
     image_height = 64
     hidden_size = 128
 
+    # todo: add decoder args here (hidden_size, attention_filters, attention_kernel_size)
+
     charset = letters + letters.upper() + digits + punctuation
     #charset = string.ascii_letters
 

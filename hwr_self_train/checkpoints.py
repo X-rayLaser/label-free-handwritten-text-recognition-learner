@@ -162,6 +162,16 @@ class SessionDirectoryLayout:
 
         self.model_spec = os.path.join(session_dir, "model_spec.json")
 
+    def make_session_dir(self):
+        """Creates session directory if it does not exist"""
+        if not os.path.exists(self.session):
+            os.makedirs(self.session)
+
+    def make_checkpoints_dir(self):
+        """Creates checkpoints subdirectory if it does not exist"""
+        if not os.path.exists(self.checkpoints):
+            os.makedirs(self.checkpoints)
+
     def remove_history(self):
         self._remove_history_file(self.history)
 

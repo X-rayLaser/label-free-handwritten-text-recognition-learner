@@ -91,19 +91,17 @@ def load_model_spec():
 
 class Environment:
     def __init__(self):
-        if not os.path.exists(session_layout.session):
-            os.makedirs(session_layout.session)
-
-        self._make_checkpoints_dir()
+        session_layout.make_session_dir()
+        session_layout.make_checkpoints_dir()
 
         tokenizer = Configuration.tokenizer
-        self.neural_pipeline = load_or_create_neural_pipeline()
+        neural_pipeline = load_or_create_neural_pipeline()
 
         image_pipeline = make_pretraining_pipeline(
             augmentation_options=Configuration.weak_augment_options,
             max_heights=Configuration.image_height
         )
-        recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, image_pipeline)
+        recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, image_pipeline)
 
         loss_fn = prepare_loss(Configuration.loss_function)
 
@@ -124,13 +122,11 @@ class Environment:
 
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
-        self.epochs_trained = self._get_trained_epochs()
+        epochs_trained = self._get_trained_epochs()
 
-        self.training_loop = TrainingLoop(trainer, metric_fns=train_metric_fns,
-                                          epochs=Configuration.epochs,
-                                          starting_epoch=self.epochs_trained + 1)
-
-        self.history_saver = HistoryCsvSaver(session_layout.history)
+        training_loop = TrainingLoop(trainer, metric_fns=train_metric_fns,
+                                     epochs=Configuration.epochs,
+                                     starting_epoch=epochs_trained + 1)
 
         eval_on_train = EvaluationTask(recognizer, training_loader, train_metric_fns,
                                        Configuration.evaluation_steps['training_set'],
@@ -141,7 +137,7 @@ class Environment:
                                            close_loop_prediction=False)
 
         val_preprocessor = make_validation_pipeline(max_heights=Configuration.image_height)
-        val_recognizer = WordRecognitionPipeline(self.neural_pipeline, tokenizer, val_preprocessor)
+        val_recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, val_preprocessor)
         eval_on_val = EvaluationTask(val_recognizer, val_loader, val_metric_fns,
                                      Configuration.evaluation_steps['validation_set'],
                                      close_loop_prediction=True)
@@ -149,6 +145,11 @@ class Environment:
         eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
                                       num_batches=Configuration.evaluation_steps['test_set'],
                                       close_loop_prediction=True)
+
+        self.neural_pipeline = neural_pipeline
+        self.epochs_trained = epochs_trained
+        self.training_loop = training_loop
+        self.history_saver = HistoryCsvSaver(session_layout.history)
         self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val, eval_on_test]
 
     def save_checkpoint(self, epoch, metrics):
