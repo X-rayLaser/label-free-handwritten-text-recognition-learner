@@ -26,3 +26,24 @@ class ProgressBar:
         filled_chars = int(step / num_steps * cols)
         remaining_chars = cols - filled_chars
         return fill * filled_chars + '>' + empty * remaining_chars
+
+
+def show_progress_bar(iterable, desc='', num_iters=None):
+    whitespaces = ' ' * 150
+    print(f'\r{whitespaces}', end='')
+    progress_bar = ProgressBar()
+
+    if not num_iters and hasattr(iterable, '__len__'):
+        num_iters = len(iterable)
+
+    for i, data in enumerate(iterable):
+        step_number = i + 1
+        if num_iters:
+            progress = progress_bar.updated(step_number, num_iters, cols=50)
+            msg = f'\r{desc}{progress} {step_number}/{num_iters}'
+        else:
+            max_val = 10000
+            progress = progress_bar.updated(step_number % max_val, max_val, cols=50)
+            msg = f'\r{desc}{progress} Iterations {step_number}'
+        print(msg, end='')
+        yield data

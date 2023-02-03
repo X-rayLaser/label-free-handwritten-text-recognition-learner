@@ -5,7 +5,7 @@ from hwr_self_train.training import TrainingLoop
 from hwr_self_train.evaluation import evaluate
 from hwr_self_train.training import print_metrics
 from hwr_self_train.environment import TuningEnvironment
-from hwr_self_train.formatters import ProgressBar
+from hwr_self_train.formatters import show_progress_bar
 from hwr_self_train.preprocessors import decode_and_score
 
 
@@ -21,26 +21,13 @@ def re_build_index(dataset):
 def predict_labels(data_loader, recognizer, tokenizer):
     recognizer.neural_pipeline.eval_mode()
 
-    num_batches = len(data_loader)
-
-    for paths, grey_levels, images in show_progress(data_loader, num_batches):
+    for paths, grey_levels, images in show_progress_bar(data_loader,
+                                                        desc='Predicting pseudo labels: '):
         y_hat = recognizer(images)
         transcripts, scores = decode_and_score(y_hat, tokenizer)
 
         yield PseudoLabeledBatch(image_paths=paths, grey_levels=grey_levels,
                                  transcripts=transcripts, scores=scores)
-
-
-def show_progress(data_loader, num_batches):
-    whitespaces = ' ' * 150
-    print(f'\r{whitespaces}', end='')
-    progress_bar = ProgressBar()
-
-    for i, data in enumerate(data_loader):
-        step_number = i + 1
-        progress = progress_bar.updated(step_number, num_batches, cols=50)
-        print(f'\rPredicting pseudo labels: {progress} {step_number}/{num_batches}', end='')
-        yield data
 
 
 @dataclass
