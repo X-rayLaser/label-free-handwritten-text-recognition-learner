@@ -264,3 +264,26 @@ def build_networks(charset, image_height=64, hidden_size=128):
     decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
                                hidden_size=decoder_hidden_size)
     return encoder, decoder
+
+
+def build_networks_spec(charset, image_height=64, hidden_size=128):
+    context_size = hidden_size * 2
+    decoder_hidden_size = hidden_size
+
+    tokenizer = CharacterTokenizer(charset)
+    sos_token = tokenizer.char2index[tokenizer.start]
+
+    return {
+        'encoder': dict(image_height=image_height, hidden_size=hidden_size),
+        'decoder': dict(sos_token=sos_token, context_size=context_size,
+                        y_size=tokenizer.charset_size, hidden_size=decoder_hidden_size)
+    }
+
+
+def build_from_spec(spec):
+    encoder_spec = spec['encoder']
+    decoder_spec = spec['decoder']
+
+    encoder = ImageEncoder(**encoder_spec)
+    decoder = AttendingDecoder(**decoder_spec)
+    return encoder, decoder

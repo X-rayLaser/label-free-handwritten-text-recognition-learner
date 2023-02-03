@@ -160,6 +160,8 @@ class SessionDirectoryLayout:
         self.history = os.path.join(session_dir, "history.csv")
         self.tuning_history = os.path.join(session_dir, "tuning_history.csv")
 
+        self.model_spec = os.path.join(session_dir, "model_spec.json")
+
     def remove_history(self):
         self._remove_history_file(self.history)
 

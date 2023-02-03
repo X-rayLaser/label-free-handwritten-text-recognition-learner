@@ -1,11 +1,11 @@
-import os
 import json
-import shutil
+import os
 
 from torch.utils.data import DataLoader
 
 from hwr_self_train.utils import collate
-from .models import ImageEncoder, AttendingDecoder
+from .models import build_from_spec, build_networks_spec
+
 from .recognition import (
     WordRecognitionPipeline,
     TrainableEncoderDecoder
@@ -35,20 +35,11 @@ from .config_utils import (
     create_optimizer
 )
 
-
 session_layout = SessionDirectoryLayout(Configuration.session_dir)
 
 
-def create_neural_pipeline(device, tokenizer):
-    encoder = ImageEncoder(image_height=Configuration.image_height,
-                           hidden_size=Configuration.hidden_size)
-
-    context_size = encoder.hidden_size * 2
-    decoder_hidden_size = encoder.hidden_size
-
-    sos_token = tokenizer.char2index[tokenizer.start]
-    decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
-                               hidden_size=decoder_hidden_size)
+def create_neural_pipeline(device, model_spec):
+    encoder, decoder = build_from_spec(model_spec)
 
     encoder_optimizer = create_optimizer(encoder, Configuration.encoder_optimizer)
     decoder_optimizer = create_optimizer(decoder, Configuration.decoder_optimizer)
@@ -57,13 +48,21 @@ def create_neural_pipeline(device, tokenizer):
     )
 
 
-def load_or_create_neural_pipeline(tokenizer):
+def load_or_create_neural_pipeline():
     """Instantiate encoder-decoder model and restore it from checkpoint if it exists,
     otherwise create checkpoint.
 
     Returns encoder-decoder model
     """
-    neural_pipeline = create_neural_pipeline(Configuration.device, tokenizer)
+
+    if os.path.isfile(session_layout.model_spec):
+        spec = load_model_spec()
+    else:
+        spec = build_networks_spec(charset=Configuration.charset,
+                                   image_height=Configuration.image_height,
+                                   hidden_size=Configuration.hidden_size)
+
+    neural_pipeline = create_neural_pipeline(Configuration.device, spec)
 
     keeper = CheckpointKeeper(session_layout.checkpoints)
 
@@ -75,10 +74,19 @@ def load_or_create_neural_pipeline(tokenizer):
         # therefore we remove existing history file
         session_layout.remove_history()
 
+        with open(session_layout.model_spec, 'w') as f:
+            f.write(json.dumps(spec))
+
         neural_pipeline.encoder.to(neural_pipeline.device)
         neural_pipeline.decoder.to(neural_pipeline.device)
         keeper.make_new_checkpoint(neural_pipeline, Configuration.device, 0, metrics={})
         return neural_pipeline
+
+
+def load_model_spec():
+    with open(session_layout.model_spec) as f:
+        s = f.read()
+        return json.loads(s)
 
 
 class Environment:
@@ -89,7 +97,7 @@ class Environment:
         self._make_checkpoints_dir()
 
         tokenizer = Configuration.tokenizer
-        self.neural_pipeline = load_or_create_neural_pipeline(tokenizer)
+        self.neural_pipeline = load_or_create_neural_pipeline()
 
         image_pipeline = make_pretraining_pipeline(
             augmentation_options=Configuration.weak_augment_options,
@@ -186,7 +194,9 @@ class TuningEnvironment:
         session_layout.create_tuning_checkpoint()
 
         tokenizer = Configuration.tokenizer
-        encoder_decoder = create_neural_pipeline(Configuration.device, tokenizer)
+
+        model_spec = load_model_spec()
+        encoder_decoder = create_neural_pipeline(Configuration.device, model_spec)
         keeper = CheckpointKeeper(session_layout.tuning_checkpoints)
         keeper.load_latest_checkpoint(encoder_decoder, Configuration.device)
 
@@ -247,3 +257,6 @@ class TuningEnvironment:
         keeper = CheckpointKeeper(session_layout.tuning_checkpoints)
         meta_data = keeper.get_latest_meta_data()
         return meta_data["epoch"]
+
+
+# todo: putting config in session, loading config from session
