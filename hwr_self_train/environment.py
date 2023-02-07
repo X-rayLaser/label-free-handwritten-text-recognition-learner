@@ -14,8 +14,8 @@ from .image_pipelines import make_pretraining_pipeline, make_validation_pipeline
 from .datasets import (
     SyntheticOnlineDataset,
     SyntheticOnlineDatasetCached,
-    UnlabeledDataset,
-    LabeledDataset
+    RealUnlabeledDataset,
+    RealLabeledDataset
 )
 
 from .checkpoints import (
@@ -116,7 +116,8 @@ class Environment:
         val_loader = self._create_data_loader(SyntheticOnlineDatasetCached,
                                               Configuration.validation_set_size)
 
-        test_ds = LabeledDataset(Configuration.iam_dataset_path)
+        test_ds_path = os.path.join(Configuration.tuning_data_dir, "labeled")
+        test_ds = RealLabeledDataset(test_ds_path)
         test_loader = DataLoader(test_ds, batch_size=Configuration.batch_size,
                                  num_workers=Configuration.num_workers, collate_fn=collate)
 
@@ -164,9 +165,6 @@ class Environment:
         except CheckpointsNotFound:
             return 0
 
-    def _make_checkpoints_dir(self):
-        os.makedirs(session_layout.checkpoints, exist_ok=True)
-
     def _create_data_loader(self, dataset_class, dataset_size):
         ds = dataset_class(
             Configuration.fonts_dir, dataset_size,
@@ -180,16 +178,12 @@ class Environment:
 
 class TuningEnvironment:
     def __init__(self):
-        pseudo_labeled_dataset = LabeledDataset(Configuration.iam_pseudo_labels)
-        pseudo_labeled_loader = self._create_loader(pseudo_labeled_dataset)
-
-        training_dataset = LabeledDataset(Configuration.iam_train_path)
-        training_loader = self._create_loader(training_dataset)
-
-        test_ds = LabeledDataset(Configuration.iam_dataset_path)
+        test_ds_path = os.path.join(Configuration.tuning_data_dir, "labeled")
+        test_ds = RealLabeledDataset(test_ds_path)
         test_loader = self._create_loader(test_ds)
 
-        unlabeled_ds = UnlabeledDataset(Configuration.iam_train_path)
+        unlabeled_ds_path = os.path.join(Configuration.tuning_data_dir, "labeled")
+        unlabeled_ds = RealUnlabeledDataset(unlabeled_ds_path)
         unlabeled_loader = self._create_loader(unlabeled_ds)
 
         session_layout.create_tuning_checkpoint()
@@ -210,25 +204,19 @@ class TuningEnvironment:
 
         eval_steps = Configuration.evaluation_steps
 
-        eval_on_train_ds = EvaluationTask(recognizer, training_loader, metric_fns,
-                                          num_batches=eval_steps["training_set"],
-                                          close_loop_prediction=True)
         eval_on_test_ds = EvaluationTask(recognizer, test_loader, test_metrics,
                                          num_batches=eval_steps["test_set"],
                                          close_loop_prediction=True)
 
-        self.pseudo_labeled_dataset = pseudo_labeled_dataset
-        self.pseudo_labeled_loader = pseudo_labeled_loader
         self.unlabeled_loader = unlabeled_loader
         self.tokenizer = tokenizer
-        self.pseudo_labels_path = Configuration.iam_pseudo_labels
         self.threshold = Configuration.confidence_threshold
         self.tuning_epochs = Configuration.tuning_epochs
         self.neural_pipeline = encoder_decoder
         self.recognizer = recognizer
         self.metric_fns = metric_fns
 
-        self.tasks = [eval_on_train_ds, eval_on_test_ds]
+        self.tasks = [eval_on_test_ds]
 
         self.history_saver = HistoryCsvSaver(session_layout.tuning_history)
 
@@ -238,9 +226,8 @@ class TuningEnvironment:
                           num_workers=Configuration.num_workers,
                           collate_fn=collate)
 
-    def get_trainer(self):
-        self.pseudo_labeled_dataset.re_build()
-        loader = self._create_loader(self.pseudo_labeled_dataset)
+    def get_trainer(self, pseudo_labeled_ds):
+        loader = self._create_loader(pseudo_labeled_ds)
 
         loss_fn = prepare_loss(Configuration.loss_function)
 

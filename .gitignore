@@ -6,6 +6,7 @@ venv/
 fonts/
 checkpoints/
 tuning_checkpoints/
+tuning_data/
 corpora/
 iam/
 temp/

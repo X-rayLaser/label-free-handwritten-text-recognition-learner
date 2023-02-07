@@ -24,11 +24,6 @@ optimizer_conf = {
     'kwargs': dict(lr=0.0001)
 }
 
-letters = "abcdefghijklmnopqrstuvwxyz"
-digits = "0123456789"
-punctuation = ".,?!:;-()'\""
-letters.upper()
-
 
 class Configuration:
     image_height = 64
@@ -36,12 +31,9 @@ class Configuration:
 
     # todo: add decoder args here (hidden_size, attention_filters, attention_kernel_size)
 
-    charset = letters + letters.upper() + digits + punctuation
-    #charset = string.ascii_letters
+    charset = string.ascii_letters
 
-    iam_pseudo_labels = 'iam/pseudo_labels.txt'
-    iam_train_path = 'iam/iam_train.txt'
-    iam_dataset_path = 'iam/iam_val.txt'
+    tuning_data_dir = 'tuning_data'
     confidence_threshold = 0.4
 
     fonts_dir = './fonts'
