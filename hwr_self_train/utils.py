@@ -1,10 +1,4 @@
-import os
-import json
-import shutil
-
 import torch
-
-from .checkpoints import CheckpointKeeper
 
 
 class Mask:
@@ -72,7 +66,7 @@ def prepare_targets(transcripts, tokenizer):
 def make_tf_batch(transcripts, tokenizer):
     """Convert raw transcripts into tensor used by decoder network for teacher forcing"""
     transcripts = prepare_tf_seqs(transcripts, tokenizer)
-    filler = tokenizer._encode(tokenizer.end)
+    filler = tokenizer.encode(tokenizer.end)
     padded, mask = pad_sequences(transcripts, filler)
     tf_batch = one_hot_tensor(padded, tokenizer.charset_size)
     return tf_batch, mask

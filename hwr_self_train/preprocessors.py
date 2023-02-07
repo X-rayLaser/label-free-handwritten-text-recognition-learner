@@ -1,30 +1,4 @@
-import torch
-from torch.nn.functional import softmax
-
-
-class ValuePreprocessor:
-    def fit(self, dataset):
-        pass
-
-    def process(self, value):
-        pass
-
-    def __call__(self, value):
-        return self.process(value)
-
-    def wrap_preprocessor(self, preprocessor):
-        """Wraps a given preprocessor with self.
-
-        Order of preprocessing: pass a value through a new preprocessor,
-        then preprocess the result with self
-
-        :param preprocessor: preprocessor to wrap
-        :return: A callable
-        """
-        return lambda value: self.process(preprocessor(value))
-
-
-class CharacterTokenizer(ValuePreprocessor):
+class CharacterTokenizer:
     start = '<s>'
     end = r'<\s>'
     out_of_charset = '<?>'
@@ -38,9 +12,9 @@ class CharacterTokenizer(ValuePreprocessor):
         self._build_char_table(charset)
 
     def process(self, text):
-        start_token = self._encode(self.start)
-        end_token = self._encode(self.end)
-        tokens = [self._encode(ch) for ch in text]
+        start_token = self.encode(self.start)
+        end_token = self.encode(self.end)
+        tokens = [self.encode(ch) for ch in text]
         return [start_token] + tokens + [end_token]
 
     @property
@@ -61,18 +35,18 @@ class CharacterTokenizer(ValuePreprocessor):
             self.char2index[ch] = num_chars
             self.index2char[num_chars] = ch
 
-    def _encode(self, ch):
+    def encode(self, ch):
         default_char = self.char2index[self.out_of_charset]
         return self.char2index.get(ch, default_char)
 
-    def _decode(self, token):
+    def decode(self, token):
         return self.index2char.get(token, self.out_of_charset)
 
     def decode_to_string(self, tokens, clean_output=False):
-        s = ''.join([self._decode(token) for token in tokens[1:-1]])
+        s = ''.join([self.decode(token) for token in tokens[1:-1]])
 
-        first_char = self._decode(tokens[0])
-        last_char = self._decode(tokens[-1])
+        first_char = self.decode(tokens[0])
+        last_char = self.decode(tokens[-1])
 
         if first_char != self.start:
             s = first_char + s
@@ -91,73 +65,3 @@ class CharacterTokenizer(ValuePreprocessor):
             s = s.replace(self.out_of_charset, '')
 
         return s
-
-
-class DecodeCharacterString:
-    def __init__(self, session):
-        self.tokenizer = session.preprocessors["tokenize"]
-
-    def __call__(self, y_hat, ground_true):
-        if type(ground_true) is torch.Tensor:
-            ground_true = ground_true.tolist()
-
-        y_hat = y_hat.argmax(dim=2).tolist()
-        tokenizer = self.tokenizer
-        predicted_texts = []
-        actual_texts = []
-
-        for predicted_tokens, true_tokens in zip(y_hat, ground_true):
-            predicted_texts.append(tokenizer.decode_to_string(predicted_tokens, clean_output=True))
-            actual_texts.append(tokenizer.decode_to_string(true_tokens, clean_output=True))
-
-        return predicted_texts, actual_texts
-
-
-def decode_output_batch(tensor, tokenizer):
-    """Convert tensor of predictions into a list of strings.
-
-    :param tensor: tensor of shape (batch_size, max_steps, num_classes) containing
-    raw (unnormalized) scores representing how likely is a given character at a given step
-
-    :param tokenizer: instance of CharacterTokenizer class
-    :return: textual transcripts extracted using predictions tensor
-    """
-
-    transcripts, _ = decode_and_score(tensor, tokenizer)
-    return transcripts
-
-
-def decode_and_score(tensor, tokenizer):
-    """Convert tensor of predictions into a list of strings and compute confidence scores.
-
-    :param tensor: tensor of shape (batch_size, max_steps, num_classes) containing
-    raw (unnormalized) scores representing how likely is a given character at a given step
-
-    :param tokenizer: instance of CharacterTokenizer class
-    :return: 2-tuples with transcripts and corresponding confidence score
-    """
-
-    pmf = softmax(tensor, dim=2)
-    values, indices = pmf.max(dim=2)
-
-    end_token = tokenizer._encode(tokenizer.end)
-
-    all_transcripts = []
-    all_scores = []
-
-    for i in range(len(indices)):
-        tokens = indices[i].tolist()
-
-        try:
-            first_n = tokens.index(end_token)
-        except ValueError:
-            first_n = len(tokens)
-
-        confidence_score = values[i, :first_n].mean()
-
-        transcript = tokenizer.decode_to_string(tokens, clean_output=True)
-
-        all_transcripts.append(transcript)
-        all_scores.append(confidence_score)
-
-    return all_transcripts, all_scores

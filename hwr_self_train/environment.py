@@ -60,7 +60,8 @@ def load_or_create_neural_pipeline():
     else:
         spec = build_networks_spec(charset=Configuration.charset,
                                    image_height=Configuration.image_height,
-                                   hidden_size=Configuration.hidden_size)
+                                   hidden_size=Configuration.hidden_size,
+                                   **Configuration.decoder_params)
 
     neural_pipeline = create_neural_pipeline(Configuration.device, spec)
 

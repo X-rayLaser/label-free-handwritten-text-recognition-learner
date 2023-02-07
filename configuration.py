@@ -1,11 +1,11 @@
 import string
-import os
 
 import torch
 from torch.optim import Adam
 from torchmetrics import CharErrorRate
 
-from hwr_self_train.preprocessors import CharacterTokenizer, decode_output_batch
+from hwr_self_train.preprocessors import CharacterTokenizer
+from hwr_self_train.decoding import decode_output_batch
 from hwr_self_train.loss_functions import MaskedCrossEntropy
 from hwr_self_train.loss_functions import LossTargetTransform
 from hwr_self_train.training import get_simple_trainer, get_consistency_trainer
@@ -29,7 +29,11 @@ class Configuration:
     image_height = 64
     hidden_size = 128
 
-    # todo: add decoder args here (hidden_size, attention_filters, attention_kernel_size)
+    decoder_params = dict(
+        hidden_size=hidden_size,
+        filters=10,
+        kernel_size=5
+    )
 
     charset = string.ascii_letters
 

@@ -8,7 +8,7 @@ from hwr_self_train.evaluation import evaluate
 from hwr_self_train.training import print_metrics
 from hwr_self_train.environment import TuningEnvironment
 from hwr_self_train.formatters import show_progress_bar
-from hwr_self_train.preprocessors import decode_and_score
+from hwr_self_train.decoding import decode_and_score
 from hwr_self_train.datasets import PseudoLabeledDataset
 
 

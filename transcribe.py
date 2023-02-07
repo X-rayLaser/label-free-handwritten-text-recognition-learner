@@ -2,7 +2,7 @@ import argparse
 
 from PIL import Image
 from hwr_self_train.environment import TuningEnvironment
-from hwr_self_train.preprocessors import decode_output_batch
+from hwr_self_train.decoding import decode_output_batch
 from configuration import Configuration
 
 
