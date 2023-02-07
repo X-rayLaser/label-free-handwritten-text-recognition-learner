@@ -1,3 +1,6 @@
+import json
+import torch
+
 from hwr_self_train.metrics import Metric
 from hwr_self_train.utils import instantiate_class
 
@@ -42,3 +45,14 @@ def prepare_metrics(metrics_conf):
         metric_fns[name] = create_metric(name, metric_fn, transform_fn)
 
     return metric_fns
+
+
+def load_conf(json_str):
+    d = json.loads(json_str)
+    class_name = d['class']
+    obj = instantiate_class(class_name)
+    for name, value in d['fields'].items():
+        setattr(obj, name, value)
+
+    obj.device = torch.device(obj.device)
+    return obj

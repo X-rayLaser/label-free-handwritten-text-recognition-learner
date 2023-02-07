@@ -2,6 +2,7 @@ import torch
 from torch import nn
 
 from .utils import prepare_targets, pad_sequences, truncate_sequences
+from .preprocessors import CharacterTokenizer
 
 
 class MaskedCrossEntropy:
@@ -49,8 +50,8 @@ class LossTargetTransform:
 
     It returns 3-tuple (prediction, targets, mask)
     """
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
+    def __init__(self, charset):
+        self.tokenizer = CharacterTokenizer(charset)
 
     def __call__(self, *args):
         y_hat, transcripts = args

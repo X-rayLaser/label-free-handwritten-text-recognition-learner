@@ -61,7 +61,8 @@ class RealLabeledDataset(Dataset):
             content = f.read()
             transcripts = content.split("\n")
 
-        image_paths = [os.path.join(ds_dir, f_name) for f_name in os.listdir(ds_dir)]
+        image_paths = [os.path.join(ds_dir, f_name) for f_name in os.listdir(ds_dir)
+                       if not f_name.endswith('.txt')]
 
         self.examples = list(zip(image_paths, transcripts))
 

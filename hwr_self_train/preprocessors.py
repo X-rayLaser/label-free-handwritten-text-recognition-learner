@@ -11,6 +11,9 @@ class CharacterTokenizer:
         self.charset = charset
         self._build_char_table(charset)
 
+    def __call__(self, value):
+        return self.process(value)
+
     def process(self, text):
         start_token = self.encode(self.start)
         end_token = self.encode(self.end)
