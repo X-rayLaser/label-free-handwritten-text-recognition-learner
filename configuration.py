@@ -1,26 +1,10 @@
 import string
 
 import torch
-from torch.optim import Adam
-from torchmetrics import CharErrorRate
-
-from hwr_self_train.preprocessors import CharacterTokenizer
-from hwr_self_train.decoding import decode_output_batch
-from hwr_self_train.loss_functions import MaskedCrossEntropy
-from hwr_self_train.loss_functions import LossTargetTransform
-from hwr_self_train.training import get_simple_trainer, get_consistency_trainer
-from hwr_self_train.word_samplers import UniformSampler, FrequencyBasedSampler
-
-
-def get_transform(tokenizer):
-    def decode(y_hat, y):
-        y_hat = decode_output_batch(y_hat, tokenizer)
-        return y_hat, y
-    return decode
 
 
 optimizer_conf = {
-    'class': Adam,
+    'class': 'torch.optim.Adam',
     'kwargs': dict(lr=0.0001)
 }
 
@@ -30,19 +14,14 @@ class Configuration:
     hidden_size = 128
 
     decoder_params = dict(
-        hidden_size=hidden_size,
+        hidden_size=128,
         filters=10,
         kernel_size=5
     )
 
     charset = string.ascii_letters
 
-    tuning_data_dir = 'tuning_data'
-    confidence_threshold = 0.4
-
     fonts_dir = './fonts'
-
-    word_sampler = FrequencyBasedSampler.from_file("word_frequencies.csv")
 
     data_generator_options = dict(
         bg_range=(200, 255),
@@ -57,17 +36,21 @@ class Configuration:
     batch_size = 32
     num_workers = 0
 
-    tokenizer = CharacterTokenizer(charset)
-
     loss_conf = {
-        'class': MaskedCrossEntropy,
+        'class': 'hwr_self_train.loss_functions.MaskedCrossEntropy',
         'kwargs': dict(reduction='sum', label_smoothing=0.6),
-        'transform': LossTargetTransform(tokenizer)
+        'transform': {
+            'class': 'hwr_self_train.loss_functions.LossTargetTransform',
+            'kwargs': dict(charset=charset)
+        }
     }
 
     cer_conf = {
-        'class': CharErrorRate,
-        'transform': get_transform(tokenizer)
+        'class': 'torchmetrics.CharErrorRate',
+        'transform': {
+            'class': 'hwr_self_train.decoding.DecodeBatchTransform',
+            'kwargs': dict(charset=charset)
+        }
     }
 
     loss_function = loss_conf
@@ -92,10 +75,10 @@ class Configuration:
         'val CER': cer_conf
     }
 
-    # evaluated on IAM dataset (without augmentation)
+    # evaluated on test dataset with distribution close to one seen in production (without augmentation)
     test_metrics = {
-        'iam loss': loss_conf,
-        'iam CER': cer_conf
+        'test loss': loss_conf,
+        'test CER': cer_conf
     }
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -111,7 +94,13 @@ class Configuration:
     epochs = 50
     tuning_epochs = 50
 
-    tuning_trainer_factory = get_simple_trainer
+    word_sampler = 'hwr_self_train.word_samplers.FrequencyBasedSampler'
+    word_frequencies = "word_frequencies.csv"
+
+    tuning_data_dir = 'tuning_data'
+    confidence_threshold = 0.4
+
+    tuning_trainer_factory = "simple_trainer"
     weak_augment_options = dict(
         p_augment=0.4,
         target_height=64,

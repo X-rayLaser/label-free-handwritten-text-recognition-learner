@@ -1,3 +1,4 @@
+from .preprocessors import CharacterTokenizer
 from torch.nn.functional import softmax
 
 
@@ -49,3 +50,11 @@ def decode_and_score(tensor, tokenizer):
         all_scores.append(confidence_score)
 
     return all_transcripts, all_scores
+
+
+class DecodeBatchTransform:
+    def __init__(self, charset):
+        self.tokenizer = CharacterTokenizer(charset)
+
+    def __call__(self, y_hat, y):
+        return decode_output_batch(y_hat, self.tokenizer), y

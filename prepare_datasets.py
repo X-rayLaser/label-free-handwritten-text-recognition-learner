@@ -1,33 +1,8 @@
 import argparse
 import json
 import os
-import importlib
 from hwr_self_train.formatters import show_progress_bar
-
-
-def instantiate_class(dotted_path, *args, **kwargs):
-    if '.' not in dotted_path:
-        raise ClassImportError(f'Invalid import path: "{dotted_path}"')
-
-    module_path, class_name = split_import_path(dotted_path)
-    error_msg = f'Failed to import and instantiate a class "{class_name}" from "{module_path}": '
-    try:
-        module = importlib.import_module(module_path)
-        cls = getattr(module, class_name)
-        return cls(*args, **kwargs)
-    except Exception as e:
-        raise ClassImportError(error_msg + str(e))
-
-
-def split_import_path(dotted_path):
-    idx = dotted_path.rindex('.')
-    module_path = dotted_path[:idx]
-    name = dotted_path[idx + 1:]
-    return module_path, name
-
-
-class ClassImportError(Exception):
-    """Raised when an error occurs during a class importing"""
+from hwr_self_train.utils import instantiate_class
 
 
 def create_unlabeled_dataset(data_importer, destination_dir):

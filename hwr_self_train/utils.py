@@ -1,3 +1,4 @@
+import importlib
 import torch
 
 
@@ -108,3 +109,32 @@ def collate(batch):
             res[i].append(inp)
 
     return res
+
+
+def instantiate_class(dotted_path, *args, **kwargs):
+    if '.' not in dotted_path:
+        raise ClassImportError(f'Invalid import path: "{dotted_path}"')
+
+    module_path, class_name = split_import_path(dotted_path)
+    error_msg = f'Failed to import and instantiate a class "{class_name}" from "{module_path}": '
+    try:
+        module = importlib.import_module(module_path)
+        cls = getattr(module, class_name)
+        return cls(*args, **kwargs)
+    except Exception as e:
+        raise ClassImportError(error_msg + str(e))
+
+
+def split_import_path(dotted_path):
+    idx = dotted_path.rindex('.')
+    module_path = dotted_path[:idx]
+    name = dotted_path[idx + 1:]
+    return module_path, name
+
+
+class ClassImportError(Exception):
+    """Raised when an error occurs during a class importing"""
+
+
+def full_class_name(obj):
+    return obj.__module__ + '.' + obj.__class__.__name__

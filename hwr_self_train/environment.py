@@ -23,7 +23,12 @@ from .checkpoints import (
     SessionDirectoryLayout,
     CheckpointsNotFound
 )
-from .training import TrainingLoop, Trainer
+from .training import (
+    TrainingLoop,
+    Trainer,
+    get_simple_trainer,
+    get_consistency_trainer
+)
 from .history_saver import HistoryCsvSaver
 from .evaluation import EvaluationTask
 
@@ -234,7 +239,12 @@ class TuningEnvironment:
 
         tokenizer = Configuration.tokenizer
 
-        return Configuration.tuning_trainer_factory(
+        if Configuration.tuning_trainer_factory == "simple_trainer":
+            trainer_factory = get_simple_trainer
+        else:
+            trainer_factory = get_consistency_trainer
+
+        return trainer_factory(
             self.recognizer, loader, loss_fn, tokenizer,
             **Configuration.weak_augment_options)
 
