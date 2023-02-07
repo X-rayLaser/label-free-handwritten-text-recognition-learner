@@ -123,7 +123,7 @@ class TrainingLoop:
         print(f'\r{stats}', end='')
 
 
-def get_simple_trainer(recognizer, loader, loss_fn, tokenizer):
+def get_simple_trainer(recognizer, loader, loss_fn, tokenizer, **kwargs):
     return Trainer(recognizer, loader, loss_fn, tokenizer)
 
 

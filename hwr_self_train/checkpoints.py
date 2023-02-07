@@ -3,6 +3,7 @@ import os
 import shutil
 
 import torch
+from .utils import instantiate_class
 
 
 def clean_metrics(metrics):
@@ -212,6 +213,24 @@ class SessionDirectoryLayout:
     def _remove_history_file(self, history_path):
         if os.path.isfile(history_path):
             os.remove(history_path)
+
+    def load_config(self):
+        config_path = os.path.join(self.session, "config.json")
+        with open(config_path) as f:
+            json_str = f.read()
+
+        return load_conf(json_str)
+
+
+def load_conf(json_str):
+    d = json.loads(json_str)
+    class_name = d['class']
+    obj = instantiate_class(class_name)
+    for name, value in d['fields'].items():
+        setattr(obj, name, value)
+
+    obj.device = torch.device(obj.device)
+    return obj
 
 
 class CheckpointsNotFound(Exception):

@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+import argparse
+import os
+
 import torch
 
 from PIL import Image
@@ -10,12 +13,14 @@ from hwr_self_train.environment import TuningEnvironment
 from hwr_self_train.formatters import show_progress_bar
 from hwr_self_train.decoding import decode_and_score
 from hwr_self_train.datasets import PseudoLabeledDataset
+from hwr_self_train.checkpoints import SessionDirectoryLayout
 
 
 def predict_labels(data_loader, recognizer, tokenizer):
     recognizer.neural_pipeline.eval_mode()
 
-    for image_paths in show_progress_bar(data_loader, desc='Predicting pseudo labels: '):
+    for data in show_progress_bar(data_loader, desc='Predicting pseudo labels: '):
+        image_paths = data[0]
         images = [Image.open(path) for path in image_paths]
         y_hat = recognizer(images)
         transcripts, scores = decode_and_score(y_hat, tokenizer)
@@ -49,8 +54,8 @@ def compute_metrics(env):
     return metrics
 
 
-def fine_tune():
-    env = TuningEnvironment()
+def fine_tune(config):
+    env = TuningEnvironment(config)
 
     starting_epoch = env.get_trained_epochs() + 1
     for epoch in range(starting_epoch, env.tuning_epochs):
@@ -71,4 +76,9 @@ def fine_tune():
 
 
 if __name__ == '__main__':
-    fine_tune()
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('session_dir', type=str, default='',
+                        help='Location of the session directory')
+    args = parser.parse_args()
+    session_config = SessionDirectoryLayout(args.session_dir).load_config()
+    fine_tune(session_config)

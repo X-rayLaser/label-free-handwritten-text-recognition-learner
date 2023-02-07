@@ -1,9 +1,8 @@
 import argparse
-import os
 from hwr_self_train.evaluation import evaluate
 from hwr_self_train.training import print_metrics
 from hwr_self_train.environment import Environment
-from hwr_self_train.config_utils import load_conf
+from hwr_self_train.checkpoints import SessionDirectoryLayout
 
 
 if __name__ == '__main__':
@@ -12,11 +11,7 @@ if __name__ == '__main__':
                         help='Location of the session directory')
     args = parser.parse_args()
 
-    config_path = os.path.join(args.session_dir, "config.json")
-    with open(config_path) as f:
-        json_str = f.read()
-
-    config = load_conf(json_str)
+    config = SessionDirectoryLayout(args.session_dir).load_config()
     env = Environment(config)
     training_loop = env.training_loop
 

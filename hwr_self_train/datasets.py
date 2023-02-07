@@ -80,7 +80,7 @@ class RealUnlabeledDataset(Dataset):
         self.image_paths = [os.path.join(ds_dir, f_name) for f_name in os.listdir(ds_dir)]
 
     def __getitem__(self, idx):
-        return self.image_paths[idx]
+        return self.image_paths[idx],
 
     def __len__(self):
         return len(self.image_paths)
