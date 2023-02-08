@@ -1,6 +1,3 @@
-import json
-import torch
-
 from hwr_self_train.metrics import Metric
 from hwr_self_train.utils import instantiate_class
 

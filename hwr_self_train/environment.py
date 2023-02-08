@@ -2,7 +2,6 @@ import json
 import os
 import importlib
 
-import torch
 from torch.utils.data import DataLoader
 
 from hwr_self_train.utils import collate, split_import_path
@@ -21,7 +20,7 @@ from .datasets import (
     RealLabeledDataset
 )
 
-from .checkpoints import (
+from .session import (
     CheckpointKeeper,
     SessionDirectoryLayout,
     CheckpointsNotFound
@@ -43,7 +42,7 @@ from .config_utils import (
 
 from .configuration import Configuration
 
-from .preprocessors import CharacterTokenizer
+from .tokenizer import CharacterTokenizer
 
 
 def create_neural_pipeline(device, model_spec, config):
@@ -252,6 +251,3 @@ class TuningEnvironment:
         keeper = CheckpointKeeper(self.session_layout.tuning_checkpoints)
         meta_data = keeper.get_latest_meta_data()
         return meta_data["epoch"]
-
-
-# todo: putting config in session, loading config from session

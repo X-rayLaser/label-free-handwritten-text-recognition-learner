@@ -1,4 +1,4 @@
-from .preprocessors import CharacterTokenizer
+from .tokenizer import CharacterTokenizer
 from torch.nn.functional import softmax
 
 

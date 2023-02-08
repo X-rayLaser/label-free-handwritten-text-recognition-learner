@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from hwr_self_train.formatters import Formatter
 from hwr_self_train.metrics import MetricsSetCalculator, Metric
 from hwr_self_train.recognition import WordRecognitionPipeline
-from hwr_self_train.preprocessors import CharacterTokenizer
+from hwr_self_train.tokenizer import CharacterTokenizer
 from hwr_self_train.augmentation import WeakAugmentation, StrongAugmentation
 
 

@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from .utils import prepare_targets, pad_sequences, truncate_sequences
-from .preprocessors import CharacterTokenizer
+from .tokenizer import CharacterTokenizer
 
 
 class MaskedCrossEntropy:

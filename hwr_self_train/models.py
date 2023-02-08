@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torchvision.models import vgg19_bn
-from .preprocessors import CharacterTokenizer
+from .tokenizer import CharacterTokenizer
 
 
 class VGG19Truncated(nn.Module):

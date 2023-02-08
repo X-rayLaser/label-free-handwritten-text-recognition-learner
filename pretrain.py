@@ -2,7 +2,7 @@ import argparse
 from hwr_self_train.evaluation import evaluate
 from hwr_self_train.training import print_metrics
 from hwr_self_train.environment import Environment
-from hwr_self_train.checkpoints import SessionDirectoryLayout
+from hwr_self_train.session import SessionDirectoryLayout
 
 
 if __name__ == '__main__':

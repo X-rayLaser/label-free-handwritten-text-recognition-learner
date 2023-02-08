@@ -3,8 +3,8 @@ import argparse
 from PIL import Image
 from hwr_self_train.environment import TuningEnvironment
 from hwr_self_train.decoding import decode_output_batch
-from hwr_self_train.checkpoints import SessionDirectoryLayout
-from hwr_self_train.preprocessors import CharacterTokenizer
+from hwr_self_train.session import SessionDirectoryLayout
+from hwr_self_train.tokenizer import CharacterTokenizer
 
 
 if __name__ == '__main__':

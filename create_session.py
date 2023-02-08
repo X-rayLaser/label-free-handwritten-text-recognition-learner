@@ -6,7 +6,7 @@ import json
 import torch
 
 from hwr_self_train.configuration import Configuration
-from hwr_self_train.checkpoints import SessionDirectoryLayout, CheckpointKeeper
+from hwr_self_train.session import SessionDirectoryLayout, CheckpointKeeper
 from hwr_self_train.models import build_networks_spec
 from hwr_self_train.environment import create_neural_pipeline
 

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import argparse
-import os
 
 import torch
 
@@ -13,7 +12,7 @@ from hwr_self_train.environment import TuningEnvironment
 from hwr_self_train.formatters import show_progress_bar
 from hwr_self_train.decoding import decode_and_score
 from hwr_self_train.datasets import PseudoLabeledDataset
-from hwr_self_train.checkpoints import SessionDirectoryLayout
+from hwr_self_train.session import SessionDirectoryLayout
 
 
 def predict_labels(data_loader, recognizer, tokenizer):
