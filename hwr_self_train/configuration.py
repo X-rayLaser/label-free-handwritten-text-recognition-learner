@@ -43,7 +43,7 @@ class Configuration:
             kernel_size=5
         )
 
-        self.charset = string.ascii_letters
+        self.charset = charset
 
         self.fonts_dir = './fonts'
 
@@ -106,7 +106,7 @@ class Configuration:
         self.tuning_epochs = 50
 
         self.word_sampler = 'hwr_self_train.word_samplers.FrequencyBasedSampler'
-        self.word_frequencies = "word_frequencies.csv"
+        self.sampler_data_file = "word_distribution.csv"
 
         self.tuning_data_dir = 'tuning_data'
         self.confidence_threshold = 0.4

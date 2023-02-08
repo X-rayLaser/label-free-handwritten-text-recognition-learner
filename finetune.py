@@ -76,7 +76,7 @@ def fine_tune(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('session_dir', type=str, default='',
+    parser.add_argument('session_dir', type=str,
                         help='Location of the session directory')
     args = parser.parse_args()
     session_config = SessionDirectoryLayout(args.session_dir).load_config()

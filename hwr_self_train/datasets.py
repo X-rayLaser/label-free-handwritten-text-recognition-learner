@@ -55,16 +55,13 @@ class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
 
 class RealLabeledDataset(Dataset):
     def __init__(self, ds_dir):
+        self.examples = self.load_data(ds_dir)
+
+    def load_data(self, ds_dir):
         transcripts_path = os.path.join(ds_dir, "transcripts.txt")
-
-        with open(transcripts_path) as f:
-            content = f.read()
-            transcripts = content.split("\n")
-
-        image_paths = [os.path.join(ds_dir, f_name) for f_name in os.listdir(ds_dir)
-                       if not f_name.endswith('.txt')]
-
-        self.examples = list(zip(image_paths, transcripts))
+        transcripts_exist = os.path.isfile(transcripts_path)
+        loader = PreparedDatasetLoader() if transcripts_exist else ImageFolderLoader()
+        return loader(ds_dir)
 
     def __getitem__(self, idx):
         image_path, transcript = self.examples[idx]
@@ -73,6 +70,43 @@ class RealLabeledDataset(Dataset):
 
     def __len__(self):
         return len(self.examples)
+
+
+class ImageFolderLoader:
+    """Assumes that dataset is simply set of images in a folder.
+    Transcript of each image is contained in its file name.
+    For example, an image with a file name "apple_84" will have
+    its label "apple".
+    """
+    def __call__(self, ds_dir):
+        examples = []
+        for f_name in os.listdir(ds_dir):
+            if f_name.endswith('.png') or f_name.endswith('.jpg'):
+                path = os.path.join(ds_dir, f_name)
+                s, _ = os.path.splitext(f_name)
+                transcript = s.split('_')[0]
+                examples.append((path, transcript))
+        return examples
+
+
+class PreparedDatasetLoader:
+    """Assumes that dataset is prepared by the toolkit"""
+    def __call__(self, ds_dir):
+        transcripts_path = os.path.join(ds_dir, "transcripts.txt")
+        with open(transcripts_path) as f:
+            content = f.read()
+            transcripts = content.split("\n")
+
+        def sort_key(file_name):
+            name, _ = os.path.splitext(file_name)
+            return int(name)
+
+        file_names = [f_name for f_name in os.listdir(ds_dir)
+                      if not f_name.endswith('.txt')]
+
+        file_names.sort(key=sort_key)
+        image_paths = [os.path.join(ds_dir, f_name) for f_name in file_names]
+        return list(zip(image_paths, transcripts))
 
 
 class RealUnlabeledDataset(Dataset):

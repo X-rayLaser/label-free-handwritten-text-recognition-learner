@@ -13,4 +13,4 @@ temp/
 session/
 pretrain_history.csv
 words.txt
-word_frequencies.csv
+word_distribution.csv

@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('output_file', type=str, help='Location of output dictionary file')
 
     parser.add_argument('--dict-file', type=str, default='',
-                        help='Location of a dictionary file (required if --gutenberg is omitted)')
+                        help='Location of a dictionary file (required if --corpora-dir is omitted)')
 
     parser.add_argument('--corpora-dir', type=str, default='',
                         help='Generate words from a folder of text files')

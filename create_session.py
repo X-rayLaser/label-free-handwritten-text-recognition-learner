@@ -51,7 +51,7 @@ def prepare_session(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('config_file', type=str, default='',
+    parser.add_argument('config_file', type=str,
                         help='Location of the configuration file (must be a Python module).')
     args = parser.parse_args()
     prepare_session(get_config(args.config_file))
