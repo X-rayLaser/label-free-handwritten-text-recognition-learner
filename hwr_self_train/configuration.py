@@ -33,7 +33,8 @@ device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 class Configuration:
     def __init__(self):
-        self.image_height = 64
+        self.max_image_width = 100 * 15
+        self.image_height = 96
         self.hidden_size = 128
 
         self.decoder_params = dict(

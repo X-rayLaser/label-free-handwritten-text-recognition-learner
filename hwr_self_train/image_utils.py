@@ -37,7 +37,11 @@ def pad_images(images, pad_strategy=None, max_width=None, max_height=None,
     pad_strategy = pad_strategy or one_sided_padding
 
     max_height = max_height or compute_max_height(images)
-    max_width = max_width or compute_max_width(images)
+
+    max_batch_width = compute_max_width(images)
+
+    if not (max_width and max_width >= max_batch_width):
+        max_width = max_batch_width
     max_width = nearest_divisible_by(max_width)
 
     # give extra padding to each image signaling the end of text
