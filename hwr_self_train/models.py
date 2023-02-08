@@ -236,12 +236,6 @@ class AttendingDecoder(nn.Module):
 
         return torch.stack(outputs, dim=1), attention_per_step
 
-    def run_inference(self, encodings):
-        decoder_hidden = torch.zeros(1, len(encodings), self.hidden_size, device=encodings.device)
-        sos = torch.zeros(len(encodings), self.y_size, dtype=encodings.dtype, device=encodings.device)
-        sos[:, self.sos_token] = 1
-        return self.close_loop_inference(encodings, decoder_hidden, sos)
-
     def predict_next(self, decoder_hidden, encoder_outputs, prev_attention_weights, y_hat_prev):
         new_attention_weights = self.attention(decoder_hidden, encoder_outputs, prev_attention_weights)
         c = self.attention.compute_context_vectors(new_attention_weights, encoder_outputs)
@@ -251,19 +245,6 @@ class AttendingDecoder(nn.Module):
         h, hidden = self.decoder_gru(v, decoder_hidden)
         h = h.squeeze(1)
         return self.linear(h), hidden, new_attention_weights
-
-
-def build_networks(charset, image_height=64, hidden_size=128):
-    encoder = ImageEncoder(image_height, hidden_size)
-
-    context_size = encoder.hidden_size * 2
-    decoder_hidden_size = encoder.hidden_size
-
-    tokenizer = CharacterTokenizer(charset)
-    sos_token = tokenizer.char2index[tokenizer.start]
-    decoder = AttendingDecoder(sos_token, context_size, y_size=tokenizer.charset_size,
-                               hidden_size=decoder_hidden_size)
-    return encoder, decoder
 
 
 def build_networks_spec(charset, image_height=64, hidden_size=128,
