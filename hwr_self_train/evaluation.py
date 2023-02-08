@@ -2,7 +2,7 @@ import torch
 
 from collections import namedtuple
 from .metrics import MovingAverage, update_running_metrics
-from .formatters import ProgressBar
+from .formatters import show_progress_bar
 
 
 def evaluate(task, supress_errors=True):
@@ -14,50 +14,41 @@ def evaluate(task, supress_errors=True):
     :return: a dictionary mapping names of metrics to their computed values
     """
     recognizer = task.recognizer
-    metrics = task.metric_functions
-
     recognizer.neural_pipeline.eval_mode()
 
+    metrics = task.metric_functions
     data_generator = task.data_loader
 
-    num_batches = task.num_batches
-
-    if isinstance(num_batches, float):
-        fraction = num_batches
-        batches_total = len(data_generator)
-        num_batches = int(round(batches_total * fraction))
-        num_batches = max(1, num_batches)
+    num_batches = calculate_num_batches(task.num_batches, len(data_generator))
 
     moving_averages = {name: MovingAverage() for name in metrics}
 
-    whitespaces = ' ' * 150
-    print(f'\r{whitespaces}', end='')
-
-    progress_bar = ProgressBar()
-
+    gen = show_progress_bar(data_generator, desc='Evaluating metrics: ',
+                            num_iters=num_batches, cols=50)
     with torch.no_grad():
-        for i, (images, transcripts) in enumerate(data_generator):
+        for i, (images, transcripts) in enumerate(gen):
             if i >= num_batches:
                 break
 
+            args = [images] if task.close_loop_prediction else [images, transcripts]
+
             try:
-                if task.close_loop_prediction:
-                    y_hat = recognizer(images)
-                else:
-                    y_hat = recognizer(images, transcripts)
+                y_hat = recognizer(*args)
+                d = dict(y=transcripts, y_hat=y_hat)
+                update_running_metrics(moving_averages, metrics, d)
             except torch.cuda.OutOfMemoryError:
                 if not supress_errors:
                     raise
-                continue
-
-            d = dict(y=transcripts, y_hat=y_hat)
-            update_running_metrics(moving_averages, metrics, d)
-
-            step_number = i + 1
-            progress = progress_bar.updated(step_number, num_batches, cols=50)
-            print(f'\rEvaluating metrics: {progress} {step_number}/{num_batches}', end='')
 
     return {metric_name: avg.value for metric_name, avg in moving_averages.items()}
+
+
+def calculate_num_batches(num_batches, batches_total):
+    if isinstance(num_batches, float):
+        fraction = num_batches
+        num_batches = int(round(batches_total * fraction))
+        num_batches = max(1, num_batches)
+    return num_batches
 
 
 EvaluationTask = namedtuple('EvaluationTask',
