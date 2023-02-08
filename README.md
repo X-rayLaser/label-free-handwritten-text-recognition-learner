@@ -1,7 +1,8 @@
 # Introduction
 
 The toolkit provides a set of tools for building a system for recognizing handwritten words.
-No labeled data is needed. This implementation is based on this paper.
+No labeled data is needed. This implementation is based on this
+[paper](https://arxiv.org/abs/2206.03149).
 
 At the core of the toolkit lies a deep neural net. Its architecture is encoder-decoder with attention.
 Training consists of 2 separate stages.
@@ -12,11 +13,11 @@ of different words rendered using random pseudo-handwritten fonts.
 During the second stage, 
 the net pretrained in the previous stage is fine-tuned on a (unlabeled) dataset of real handwriting
 images through a procedure of self-training.
-This procedure consists of repeated cycles. Each cycle consists of the following operations:
+This procedure consists of repeating the following sequence of steps:
 - recognize unlabeled images
-- keep only confidently recognized ones 
-- on the fly create a dataset from these recognized images
-- train the net on that dataset
+- keep only confidently recognized images
+- create a dataset from these recognized images
+- train the neural net on that dataset
 
 # Preparations
 
