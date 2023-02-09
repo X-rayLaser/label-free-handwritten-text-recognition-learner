@@ -8,8 +8,10 @@ class SyntheticOnlineDataset(Dataset):
     def __init__(self, fonts_dir, size, word_sampler,
                  bg_range=(255, 255),
                  color_range=(0, 100),
+                 stroke_fill_range=(0, 100),
                  font_size_range=(50, 100),
-                 rotation_range=(0, 0)):
+                 rotation_range=(0, 0),
+                 spaces_range=(0, 2)):
         super().__init__()
         self.size = size
         self.fonts_dir = fonts_dir
@@ -17,8 +19,10 @@ class SyntheticOnlineDataset(Dataset):
         simple_generator = SimpleRandomWordGenerator(word_sampler, self.fonts_dir,
                                                      bg_range=bg_range,
                                                      color_range=color_range,
+                                                     stroke_fill_range=stroke_fill_range,
                                                      font_size_range=font_size_range,
-                                                     rotation_range=rotation_range)
+                                                     rotation_range=rotation_range,
+                                                     spaces_range=spaces_range)
         self.iterator = iter(simple_generator)
 
     def __getitem__(self, idx):
@@ -37,12 +41,16 @@ class SyntheticOnlineDataset(Dataset):
 
 class SyntheticOnlineDatasetCached(SyntheticOnlineDataset):
     def __init__(self, fonts_dir, size, word_sampler, bg_range=(255, 255),
-                 color_range=(0, 100), font_size_range=(50, 100), rotation_range=(0, 0)):
+                 color_range=(0, 100), stroke_fill_range=(0, 100),
+                 font_size_range=(50, 100), rotation_range=(0, 0),
+                 spaces_range=(0, 2)):
         super().__init__(fonts_dir, size, word_sampler,
                          bg_range=bg_range,
                          color_range=color_range,
+                         stroke_fill_range=stroke_fill_range,
                          font_size_range=font_size_range,
-                         rotation_range=rotation_range)
+                         rotation_range=rotation_range,
+                         spaces_range=spaces_range)
 
         self.cache = {}
 

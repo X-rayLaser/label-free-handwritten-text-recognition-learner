@@ -50,8 +50,10 @@ class Configuration:
         self.data_generator_options = dict(
             bg_range=(200, 255),
             color_range=(0, 100),
+            stroke_fill_range=(0, 100),
             font_size_range=(50, 100),
-            rotation_range=(0, 0)
+            rotation_range=(0, 0),
+            spaces_range=(0, 2)
         )
 
         self.training_set_size = 50000

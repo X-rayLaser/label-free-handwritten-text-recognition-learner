@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class SimpleRandomWordGenerator:
     def __init__(self, word_sampler, font_dir, font_size_range=(64, 64),
                  bg_range=(240, 255), color_range=(0, 15), stroke_width_range=(0, 2),
-                 stroke_fill_range=(0, 15), rotation_range=(0, 0)):
+                 stroke_fill_range=(0, 15), rotation_range=(0, 0), spaces_range=(0, 2)):
         self.sampler = word_sampler
         self.font_dir = font_dir
         self.font_files = [os.path.join(font_dir, font_file) for font_file in os.listdir(font_dir)
@@ -24,6 +24,7 @@ class SimpleRandomWordGenerator:
         self.stroke_width_range = stroke_width_range
         self.stroke_fill_range = stroke_fill_range
         self.rotation_range = rotation_range
+        self.spaces_range = spaces_range
 
     def __iter__(self):
         while True:
@@ -37,6 +38,9 @@ class SimpleRandomWordGenerator:
             color = random.randint(*self.color_range)
             stroke_fill = random.randint(*self.stroke_fill_range)
             stroke_width = random.randint(*self.stroke_width_range)
+            num_spaces = random.randint(*self.spaces_range)
+
+            word = add_spacing(word, num_spaces)
             try:
                 image = self.create_image(word, font, font_size,
                                           background=background, color=color,
@@ -88,3 +92,8 @@ class SimpleRandomWordGenerator:
             if self.rotation_range != (0, 0):
                 image = rotate(image)
             return image
+
+
+def add_spacing(s, n=0, space=0x202F):
+    narrow_space = chr(space) * n
+    return narrow_space.join(s)
