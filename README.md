@@ -69,6 +69,7 @@ python transcribe.py session path/to/some/image.png
 python evaluate.py session
 ```
 
+For more details about each step, see the sections below.
 
 # Preparations
 
@@ -104,23 +105,23 @@ probability. The next optional section gives a little more details.
 If you have a directory containing text corpora as a plain text files,
 you can build word distribution with this command:
 ```
-python prepare_dictionary.py word_frequencies --corpora-dir path/to/corpora --with-freq
+python prepare_dictionary.py word_distribution.csv --corpora-dir path/to/corpora --with-freq
 ```
 
 ### Word samplers
 Data generator that creates synthetic word images makes use of a word sampler.
 Sampler is simply a callable that returns a random word on every call. There are 2 different sampler classes.
 The first and the simplest one is UniformSampler.
-With this sampler, words are taken from uniform distribution over all dictionary words so that every word in 
+With this sampler, words are taken from uniform distribution over all dictionary words so that every word in it 
 is equally likely to appear.
 
-The other is FrequencyBasedSampler. As its name suggests, it samples words according to their frequencies.
-Words with higher frequency will appear more frequently. 
+The other is FrequencyBasedSampler. As its name suggests, it samples words according to their probabilities/frequencies.
+Words with higher probability will appear more frequently. 
 
 You can specify which one you need in the configuration file (see section later).
 
 It is best to compute word frequencies on text corpora written in the style
-close to data you will see in production environment.
+close to text that you expect to see in production environment.
 
 ## 3. Real unlabeled handwriting images
 
@@ -132,9 +133,9 @@ It should contain image files whose names (excluding the file extension part) ma
 
 ## 4.Configuration
 
-Final piece is to create a configuration class. 
+Final piece is a configuration class. 
 You can use default configuration class if it suits your needs at ```hwr_self_train.configuration.Configuration```.
-Alternatively, you can create your own class inherited from default one and override it. To do so, 
+Alternatively, you can create your own class inheriting from default one and override its settings. To do so, 
 create a new Python module "my_config.py". Within it, create a class and fill it with the following
 (replace provided values with yours):
 ```
@@ -143,6 +144,9 @@ from hwr_self_train import configuration
 class Configuration(configuration.Configuration):
     def __init__(self):
         super().__init__()
+        
+        # specifies the batch size used for both pretraining and fine-tuning phases
+        self.batch_size = 32
         
         # relative path to a directory of fonts 
         self.fonts_dir = './fonts'
@@ -155,6 +159,8 @@ class Configuration(configuration.Configuration):
         
         # relative path to the directory with real data used to fine-tune the model on
         self.tuning_data_dir = 'tuning_data'
+        
+        # more options to override
 ```
 
 For more details, see ```hwr_self_train.configuration.Configuration``` class to see which configuration options
