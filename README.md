@@ -32,7 +32,7 @@ python prepare_dictionary.py word_distribution.csv --corpora-dir corpora --with-
 ```
 - Create a directory with name "tuning_data".
 Within that directory create a subdirectory named "unlabeled" and put handwriting image
-files (jpe or png) in there. Optionally, to evaluate your fine-tuned model, you can add another subdirectory called "labeled".
+files (jpg or png) in there. Optionally, to evaluate your fine-tuned model, you can add another subdirectory called "labeled".
 It should contain image files whose names (excluding the file extension part) match their transcriptions. For example,
 an image could have this name "apple.jpg" (it will be assumed to have label "apple").
 - create a configuration file called my_config.py, define a class inheriting a 
@@ -126,7 +126,7 @@ close to data you will see in production environment.
 
 This is the data that will be used to calibrate pretrained neural net. Simply create a directory
 with name "tuning_data". Within that directory create a subdirectory named "unlabeled" and put handwriting image
-files (jpe or png) in there. Optionally, to evaluate your fine-tuned model, you can add another subdirectory called "labeled".
+files (jpg or png) in there. Optionally, to evaluate your fine-tuned model, you can add another subdirectory called "labeled".
 It should contain image files whose names (excluding the file extension part) match their transcriptions. For example,
 "apple.jpg".
 
