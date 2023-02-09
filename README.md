@@ -19,11 +19,62 @@ This procedure consists of repeating the following sequence of steps:
 - create a dataset from these recognized images
 - train the neural net on that dataset
 
+# Quick start
+
+- Under the repository folder create a directory called "fonts" and fill it with TrueType fonts with extensions
+otf or ttf
+- Similarly, create a directory called "corpora"
+- Download a few books from [Project Gutenberg](https://www.gutenberg.org/browse/scores/top) and save them to
+"corpora" directory (alternatively, find other corpora in plain text form and put them here)
+- Build word distribution and save it in "word_distribution.csv" file with this command:
+```
+python prepare_dictionary.py word_distribution.csv --corpora-dir corpora --with-freq
+```
+- Create a directory with name "tuning_data".
+Within that directory create a subdirectory named "unlabeled" and put handwriting image
+files (jpe or png) in there. Optionally, to evaluate your fine-tuned model, you can add another subdirectory called "labeled".
+It should contain image files whose names (excluding the file extension part) match their transcriptions. For example,
+an image could have this name "apple.jpg" (it will be assumed to have label "apple").
+- create a configuration file called my_config.py, define a class inheriting a 
+hwr_self_train.configuration.Configuration class and define some settings (these will override defaults
+specified by hwr_self_train.configuration.Configuration class):
+```
+from hwr_self_train import configuration
+
+class Configuration(configuration.Configuration):
+    def __init__(self):
+        super().__init__()
+        self.image_height = 96
+        self.hidden_size = 128
+        self.batch_size = 32
+```
+- create a training session:
+```
+python create_session.py my_config.py
+```
+- Start/resume pretraining on synthetic handwriting images:
+```
+python pretrain.py session
+```
+- Fine-tune the model on real handwriting images (possibly unlabeled)
+```
+python finetune.py session
+```
+- Transcribe image with real handwritten word:
+```
+python transcribe.py session path/to/some/image.png
+```
+- Evaluate the model and compute metrics:
+```
+python evaluate.py session
+```
+
+
 # Preparations
 
 Before proceeding to training, we need to perform a few steps.
 
-## Getting fonts
+## 1. Getting fonts
 
 In order to pretrain the net on synthetic images of (pseudo) handwritten words, we need to render them using
 a large variety of handwritten fonts. The repository already comes with built-in image generator that generates
@@ -43,7 +94,7 @@ python prepare_fonts.py path/to/google_fonts/repository fonts --num-fonts 250 --
 
 Alternatively, you can manually create fonts directory and fill it with fonts of your choosing.
 
-## Dictionary and word distribution
+## 2. Dictionary and word distribution
 
 Another thing that we need for image generator is either a dictionary of words or word distribution table.
 Dictionary should be a plain text file consisting of multiple lines, one word per line.
@@ -71,7 +122,7 @@ You can specify which one you need in the configuration file (see section later)
 It is best to compute word frequencies on text corpora written in the style
 close to data you will see in production environment.
 
-## Real unlabeled handwriting images
+## 3. Real unlabeled handwriting images
 
 This is the data that will be used to calibrate pretrained neural net. Simply create a directory
 with name "tuning_data". Within that directory create a subdirectory named "unlabeled" and put handwriting image
@@ -79,7 +130,7 @@ files (jpe or png) in there. Optionally, to evaluate your fine-tuned model, you 
 It should contain image files whose names (excluding the file extension part) match their transcriptions. For example,
 "apple.jpg".
 
-## Configuration
+## 4.Configuration
 
 Final piece is to create a configuration class. 
 You can use default configuration class if it suits your needs at ```hwr_self_train.configuration.Configuration```.
