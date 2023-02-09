@@ -1,23 +1,15 @@
 # Introduction
 
-The toolkit provides a set of tools for building a system for recognizing handwritten words.
-No labeled data is needed. This implementation is based on this
-[paper](https://arxiv.org/abs/2206.03149).
+The toolkit provides a set of tools for training a neural net recognize handwritten words.
+No labeled data is needed. This is achieved by first pretraining the model on large set of 
+synthetic handwriting images. After that the network is fine-tuned on a set of real unlabeled handwriting images 
+through self-training technique.
 
-At the core of the toolkit lies a deep neural net. Its architecture is encoder-decoder with attention.
-Training consists of 2 separate stages.
+One only needs to provide (pseudo) handwritten fonts, text corpora
+(to learn probability distribution over set of words), and real handwriting images. Although images do not
+need to be transcribed, small subset of transcribed/labeled images will be helpful for estimating metrics.
 
-During the first stage, the net is pretrained on synthetic images
-of different words rendered using random pseudo-handwritten fonts.
-
-During the second stage, 
-the net pretrained in the previous stage is fine-tuned on a (unlabeled) dataset of real handwriting
-images through a procedure of self-training.
-This procedure consists of repeating the following sequence of steps:
-- recognize unlabeled images
-- keep only confidently recognized images
-- create a dataset from these recognized images
-- train the neural net on that dataset
+This implementation is based on the [paper](https://arxiv.org/abs/2206.03149).
 
 # Quick start
 
@@ -70,6 +62,23 @@ python evaluate.py session
 ```
 
 For more details about each step, see the sections below.
+
+# Training scheme briefly
+
+At the core of the toolkit lies a deep neural net. Its architecture is encoder-decoder with attention.
+Training consists of 2 separate stages.
+
+During the first stage, the net is pretrained on synthetic images
+of different words rendered using random pseudo-handwritten fonts.
+
+During the second stage, 
+the net pretrained in the previous stage is fine-tuned on a (unlabeled) dataset of real handwriting
+images through a procedure of self-training.
+This procedure consists of repeating the following sequence of steps:
+- recognize unlabeled images
+- keep only confidently recognized images
+- create a dataset from these recognized images
+- train the neural net on that dataset
 
 # Preparations
 
