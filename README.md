@@ -11,6 +11,10 @@ need to be transcribed, small subset of transcribed/labeled images will be helpf
 
 This implementation is based on the [paper](https://arxiv.org/abs/2206.03149).
 
+# Prerequisites
+
+Python version 3.8.9 or higher.
+
 # Quick start
 
 - Under the repository folder create a directory called "fonts" and fill it with TrueType fonts with extensions
