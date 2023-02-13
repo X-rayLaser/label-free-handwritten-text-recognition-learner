@@ -33,8 +33,10 @@ device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 class Configuration:
     def __init__(self):
-        self.max_image_width = 100 * 15
-        self.image_height = 96
+        #self.max_image_width = 100 * 15
+        self.max_image_width = None
+
+        self.image_height = 64
         self.hidden_size = 128
 
         self.decoder_params = dict(
@@ -49,8 +51,8 @@ class Configuration:
 
         self.data_generator_options = dict(
             bg_range=(200, 255),
-            color_range=(0, 100),
-            stroke_fill_range=(0, 100),
+            color_range=(0, 50),
+            stroke_fill_range=(0, 50),
             font_size_range=(50, 100),
             rotation_range=(0, 0),
             spaces_range=(0, 2)
