@@ -3,7 +3,7 @@ import os
 import shutil
 
 import torch
-from .utils import instantiate_class
+from .configuration import Configuration
 
 
 def clean_metrics(metrics):
@@ -224,8 +224,7 @@ class SessionDirectoryLayout:
 
 def load_conf(json_str):
     d = json.loads(json_str)
-    class_name = d['class']
-    obj = instantiate_class(class_name)
+    obj = Configuration()
     for name, value in d['fields'].items():
         setattr(obj, name, value)
 
