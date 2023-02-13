@@ -64,11 +64,15 @@ class LossTargetTransform:
 
         max_transcript_len = max(len(token_seq) for token_seq in tokens)
 
-        # todo: consider truncating the tensor along steps dim instead
-        #  (to the length of longest transcript)
+        # ensures that each transcript is at most of prediction_num_steps length
         if max_transcript_len > prediction_num_steps:
             tokens = truncate_sequences(tokens, prediction_num_steps)
 
-        seqs, mask = pad_sequences(tokens, filler, max_length=prediction_num_steps)
+        seqs, mask = pad_sequences(tokens, filler)
+
+        # truncate the tensor along steps dim to the length of the longest transcript
+        max_steps = len(seqs[0])
+        y_hat = y_hat[:, :max_steps]
+
         target = torch.LongTensor(seqs)
         return [y_hat] + [target] + [mask]
