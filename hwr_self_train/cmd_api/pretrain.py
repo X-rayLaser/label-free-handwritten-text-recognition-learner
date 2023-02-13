@@ -1,16 +1,28 @@
-import argparse
 from hwr_self_train.evaluation import evaluate
 from hwr_self_train.training import print_metrics
 from hwr_self_train.environment import Environment
 from hwr_self_train.session import SessionDirectoryLayout
 
+from .base import Command
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
+
+class PretrainCommand(Command):
+    name = 'pretrain'
+    help = 'Start/resume pretraining the model on synthetic data'
+
+    def configure_parser(self, parser):
+        configure_parser(parser)
+
+    def __call__(self, args):
+        run(args)
+
+
+def configure_parser(parser):
     parser.add_argument('session_dir', type=str, default='',
                         help='Location of the session directory')
-    args = parser.parse_args()
 
+
+def run(args):
     config = SessionDirectoryLayout(args.session_dir).load_config()
     env = Environment(config)
     training_loop = env.training_loop

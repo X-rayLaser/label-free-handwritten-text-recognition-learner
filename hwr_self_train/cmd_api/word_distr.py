@@ -1,9 +1,47 @@
-import argparse
 import csv
 import os
 
 import nltk
 from nltk.probability import FreqDist
+
+from .base import Command
+
+
+class CreateWordDistributionCommand(Command):
+    name = 'word_distr'
+    help = 'Prepare dictionary file or word distribution used to synthesize word images'
+
+    def configure_parser(self, parser):
+        configure_parser(parser)
+
+    def __call__(self, args):
+        run(args)
+
+
+def configure_parser(parser):
+    parser.add_argument('output_file', type=str, help='Location of output dictionary file')
+
+    parser.add_argument('--dict-file', type=str, default='',
+                        help='Location of a dictionary file (required if --corpora-dir is omitted)')
+
+    parser.add_argument('--corpora-dir', type=str, default='',
+                        help='Generate words from a folder of text files')
+
+    parser.add_argument('--max-len', type=int, default=14,
+                        help='Exclude words from the output file longer than max-len characters')
+    parser.add_argument('--only-letters', default=False, action='store_true',
+                        help='Filters out words containing digits and other non-letter characters')
+    parser.add_argument('--with-freq', default=False, action='store_true',
+                        help='Whether to calculate frequencies of each word')
+
+
+def run(args):
+    words_gen = load_corpora(args.corpora_dir) if args.corpora_dir else load_dict_file(args.dict_file)
+
+    words_gen = filter_words(words_gen, args.only_letters, max_word_len=args.max_len)
+
+    save_func = save_distr if args.with_freq else save_dict_file
+    save_func(words_gen, args.output_file)
 
 
 def load_dict_file(dict_file):
@@ -69,33 +107,3 @@ def save_dict_file(words, destination):
     with open(destination, 'w') as f:
         file_content = '\n'.join(vocab)
         f.write(file_content)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Prepare dictionary file used to synthesize word images'
-    )
-
-    parser.add_argument('output_file', type=str, help='Location of output dictionary file')
-
-    parser.add_argument('--dict-file', type=str, default='',
-                        help='Location of a dictionary file (required if --corpora-dir is omitted)')
-
-    parser.add_argument('--corpora-dir', type=str, default='',
-                        help='Generate words from a folder of text files')
-
-    parser.add_argument('--max-len', type=int, default=14,
-                        help='Exclude words from the output file longer than max-len characters')
-    parser.add_argument('--only-letters', default=False, action='store_true',
-                        help='Filters out words containing digits and other non-letter characters')
-    parser.add_argument('--with-freq', default=False, action='store_true',
-                        help='Whether to calculate frequencies of each word')
-
-    args = parser.parse_args()
-
-    words_gen = load_corpora(args.corpora_dir) if args.corpora_dir else load_dict_file(args.dict_file)
-
-    words_gen = filter_words(words_gen, args.only_letters, max_word_len=args.max_len)
-
-    save_func = save_distr if args.with_freq else save_dict_file
-    save_func(words_gen, args.output_file)

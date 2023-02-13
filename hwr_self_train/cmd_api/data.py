@@ -1,8 +1,38 @@
-import argparse
 import json
 import os
+
 from hwr_self_train.formatters import show_progress_bar
 from hwr_self_train.utils import instantiate_class
+from .base import Command
+
+
+class DataCommand(Command):
+    name = 'data'
+    help = 'Prepare real handwriting data to be used for adaptation stage'
+
+    def configure_parser(self, parser):
+        configure_parser(parser)
+
+    def __call__(self, args):
+        run(args)
+
+
+def configure_parser(parser):
+    parser.add_argument('data_importer', type=str,
+                        help='Fully qualified path (dotted) to Data Importer class')
+
+    parser.add_argument('--kwargs', type=json.loads, default={},
+                        help='Optional keyword arguments in JSON format passed to data importer constructor')
+
+    parser.add_argument('--dest', type=str, default='tuning_data',
+                        help='Output directory that will store prepared datasets')
+
+
+def run(args):
+    destination_dir = args.dest
+    data_importer = instantiate_class(args.data_importer, **args.kwargs)
+    create_unlabeled_dataset(data_importer, destination_dir)
+    create_labeled_dataset(data_importer, destination_dir)
 
 
 def create_unlabeled_dataset(data_importer, destination_dir):
@@ -33,29 +63,3 @@ def create_labeled_dataset(data_importer, destination_dir):
 
     spaces = ' ' * 150
     print(f'\r{spaces}')
-
-
-def prepare_dataset(args):
-    destination_dir = args.dest
-    data_importer = instantiate_class(args.data_importer, **args.kwargs)
-    create_unlabeled_dataset(data_importer, destination_dir)
-    create_labeled_dataset(data_importer, destination_dir)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Prepare real handwriting data to be used for adaptation stage'
-    )
-
-    parser.add_argument('data_importer', type=str,
-                        help='Fully qualified path (dotted) to Data Importer class')
-
-    parser.add_argument('--kwargs', type=json.loads, default={},
-                        help='Optional keyword arguments in JSON format passed to data importer constructor')
-
-    parser.add_argument('--dest', type=str, default='tuning_data',
-                        help='Output directory that will store prepared datasets')
-
-    cmd_args = parser.parse_args()
-
-    prepare_dataset(cmd_args)

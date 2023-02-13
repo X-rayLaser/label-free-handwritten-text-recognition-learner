@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import argparse
 
 import torch
 
@@ -13,6 +12,28 @@ from hwr_self_train.formatters import show_progress_bar
 from hwr_self_train.decoding import decode_and_score
 from hwr_self_train.datasets import PseudoLabeledDataset
 from hwr_self_train.session import SessionDirectoryLayout
+from .base import Command
+
+
+class FinetuneCommand(Command):
+    name = 'finetune'
+    help = 'Finetune pretrained neural net on real unlabeled handwriting images'
+
+    def configure_parser(self, parser):
+        configure_parser(parser)
+
+    def __call__(self, args):
+        run(args)
+
+
+def configure_parser(parser):
+    parser.add_argument('session_dir', type=str,
+                        help='Location of the session directory')
+
+
+def run(args):
+    session_config = SessionDirectoryLayout(args.session_dir).load_config()
+    fine_tune(session_config)
 
 
 def predict_labels(data_loader, recognizer, tokenizer):
@@ -72,12 +93,3 @@ def fine_tune(config):
         print_metrics(metrics, epoch)
         env.history_saver.add_entry(epoch, metrics)
         env.save_checkpoint(epoch, metrics)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('session_dir', type=str,
-                        help='Location of the session directory')
-    args = parser.parse_args()
-    session_config = SessionDirectoryLayout(args.session_dir).load_config()
-    fine_tune(session_config)

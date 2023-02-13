@@ -1,4 +1,3 @@
-import argparse
 import os
 import importlib
 import json
@@ -9,6 +8,27 @@ from hwr_self_train.configuration import Configuration
 from hwr_self_train.session import SessionDirectoryLayout, CheckpointKeeper
 from hwr_self_train.models import build_networks_spec
 from hwr_self_train.environment import create_neural_pipeline
+from .base import Command
+
+
+class CreateSessionCommand(Command):
+    name = 'session'
+    help = 'Create a fresh training session'
+
+    def configure_parser(self, parser):
+        configure_parser(parser)
+
+    def __call__(self, args):
+        run(args)
+
+
+def configure_parser(parser):
+    parser.add_argument('config_file', type=str,
+                        help='Location of the configuration file (must be a Python module).')
+
+
+def run(args):
+    prepare_session(get_config(args.config_file))
 
 
 def get_config(config_file) -> Configuration:
@@ -47,11 +67,3 @@ def prepare_session(config):
     config_save_path = os.path.join(config.session_dir, "config.json")
     with open(config_save_path, 'w') as f:
         f.write(json_str)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('config_file', type=str,
-                        help='Location of the configuration file (must be a Python module).')
-    args = parser.parse_args()
-    prepare_session(get_config(args.config_file))
