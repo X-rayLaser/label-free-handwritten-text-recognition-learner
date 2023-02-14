@@ -4,7 +4,6 @@ import random
 import PIL
 from PIL import Image
 from .base import DataImporter
-from hwr_self_train.datasets import clean_image
 
 
 def prepare_iam_dataset(iam_location, max_words=None, train_fraction=0.8, only_letters=False):
@@ -112,3 +111,7 @@ class IAMImporter(DataImporter):
     def get_cleaned_image(self, path, grey_level):
         image = Image.open(path)
         return clean_image(image, grey_level)
+
+
+def clean_image(image, gray_level):
+    return image.point(lambda p: 255 if p > gray_level else p)

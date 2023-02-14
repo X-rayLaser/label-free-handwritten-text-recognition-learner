@@ -139,7 +139,3 @@ class PseudoLabeledDataset(Dataset):
 
     def __len__(self):
         return len(self.paths_with_transcripts)
-
-
-def clean_image(image, gray_level):
-    return image.point(lambda p: 255 if p > gray_level else p)

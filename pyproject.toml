@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lafhterlearn"
+version = "0.5.0"
+authors = [
+  { name="Evgenii Dolotov", email="supernovaprotocol@gmail.com" },
+]
+description = "Label-Free Handwritten Text Recognition Learner implemented in Pytorch"
+readme = "README.md"
+license-files = { paths = ["LICENSE"] }
+requires-python = ">=3.8.9"
+dependencies = [
+    "torch < 2",
+    "torchvision < 1",
+    "Pillow>=8.4.0, < 10",
+    "torchmetrics < 1",
+    "nltk",
+    "numpy"
+]
+keywords = [
+    "machine-learning", "deep-learning", "neural-networks", "pytorch",
+    "handwriting-recognition", "handwritten-text-recognition", "ocr"
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/X-rayLaser/label-free-handwritten-text-recognition-learner"
+
+[project.scripts]
+lafhterlearn = "torchassistant.cmd_api:execute_command"

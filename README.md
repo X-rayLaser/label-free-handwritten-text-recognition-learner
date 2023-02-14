@@ -1,7 +1,8 @@
 # Introduction
 
-The toolkit provides a set of tools for training a neural net recognize handwritten words.
-No labeled data is needed. This is achieved by first pretraining the model on large set of 
+Label-Free Handwritten Text Recognition Learner (lafhterlearn) is a toolkit providing 
+a set of tools for training a neural net to recognize handwritten words.
+No labeled data (i.e. image transcripts) is needed. This is achieved by first pretraining the model on large set of 
 synthetic handwriting images. After that the network is fine-tuned on a set of real unlabeled handwriting images 
 through self-training technique.
 
