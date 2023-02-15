@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import torch
-from hwr_self_train.utils import make_tf_batch
+from lafhterlearn.utils import make_tf_batch
 from .tokenizer import CharacterTokenizer
 from .image_pipelines import ImagePipeline
 from .models import ImageEncoder, AttendingDecoder

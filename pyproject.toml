@@ -44,4 +44,4 @@ classifiers = [
 "Homepage" = "https://github.com/X-rayLaser/label-free-handwritten-text-recognition-learner"
 
 [project.scripts]
-lafhterlearn = "torchassistant.cmd_api:execute_command"
+lafhterlearn = "lafhterlearn.cmd_api:execute_command"

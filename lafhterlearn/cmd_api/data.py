@@ -1,8 +1,8 @@
 import json
 import os
 
-from hwr_self_train.formatters import show_progress_bar
-from hwr_self_train.utils import instantiate_class
+from lafhterlearn.formatters import show_progress_bar
+from lafhterlearn.utils import instantiate_class
 from .base import Command
 
 

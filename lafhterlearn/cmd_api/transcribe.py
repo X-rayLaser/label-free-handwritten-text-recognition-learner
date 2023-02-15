@@ -1,9 +1,9 @@
 from PIL import Image
 
-from hwr_self_train.environment import TuningEnvironment
-from hwr_self_train.decoding import decode_output_batch
-from hwr_self_train.session import SessionDirectoryLayout
-from hwr_self_train.tokenizer import CharacterTokenizer
+from lafhterlearn.environment import TuningEnvironment
+from lafhterlearn.decoding import decode_output_batch
+from lafhterlearn.session import SessionDirectoryLayout
+from lafhterlearn.tokenizer import CharacterTokenizer
 from .base import Command
 
 

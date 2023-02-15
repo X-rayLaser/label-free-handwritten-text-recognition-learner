@@ -4,7 +4,7 @@ import importlib
 
 from torch.utils.data import DataLoader
 
-from hwr_self_train.utils import collate, split_import_path
+from lafhterlearn.utils import collate, split_import_path
 
 from .models import build_from_spec
 

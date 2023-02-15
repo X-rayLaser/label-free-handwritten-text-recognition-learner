@@ -1,7 +1,7 @@
 import string
 import json
 import torch
-from hwr_self_train.utils import full_class_name
+from lafhterlearn.utils import full_class_name
 
 
 optimizer_conf = {
@@ -12,10 +12,10 @@ optimizer_conf = {
 charset = string.ascii_letters
 
 loss_conf = {
-    'class': 'hwr_self_train.loss_functions.MaskedCrossEntropy',
+    'class': 'lafhterlearn.loss_functions.MaskedCrossEntropy',
     'kwargs': dict(reduction='sum', label_smoothing=0.6),
     'transform': {
-        'class': 'hwr_self_train.loss_functions.LossTargetTransform',
+        'class': 'lafhterlearn.loss_functions.LossTargetTransform',
         'kwargs': dict(charset=charset)
     }
 }
@@ -23,7 +23,7 @@ loss_conf = {
 cer_conf = {
     'class': 'torchmetrics.CharErrorRate',
     'transform': {
-        'class': 'hwr_self_train.decoding.DecodeBatchTransform',
+        'class': 'lafhterlearn.decoding.DecodeBatchTransform',
         'kwargs': dict(charset=charset)
     }
 }
@@ -109,7 +109,7 @@ class Configuration:
         self.epochs = 50
         self.tuning_epochs = 50
 
-        self.word_sampler = 'hwr_self_train.word_samplers.FrequencyBasedSampler'
+        self.word_sampler = 'lafhterlearn.word_samplers.FrequencyBasedSampler'
         self.sampler_data_file = "word_distribution.csv"
 
         self.tuning_data_dir = 'tuning_data'

@@ -4,15 +4,15 @@ import json
 
 import torch
 
-from hwr_self_train.configuration import Configuration
-from hwr_self_train.session import SessionDirectoryLayout, CheckpointKeeper
-from hwr_self_train.models import build_networks_spec
-from hwr_self_train.environment import create_neural_pipeline
+from lafhterlearn.configuration import Configuration
+from lafhterlearn.session import SessionDirectoryLayout, CheckpointKeeper
+from lafhterlearn.models import build_networks_spec
+from lafhterlearn.environment import create_neural_pipeline
 from .base import Command
 
 
 class CreateSessionCommand(Command):
-    name = 'session'
+    name = 'make_session'
     help = 'Create a fresh training session'
 
     def configure_parser(self, parser):

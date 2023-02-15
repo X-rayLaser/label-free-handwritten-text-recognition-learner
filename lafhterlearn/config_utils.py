@@ -1,5 +1,5 @@
-from hwr_self_train.metrics import Metric
-from hwr_self_train.utils import instantiate_class
+from lafhterlearn.metrics import Metric
+from lafhterlearn.utils import instantiate_class
 
 
 def create_metric(name, metric_fn, transform_fn):

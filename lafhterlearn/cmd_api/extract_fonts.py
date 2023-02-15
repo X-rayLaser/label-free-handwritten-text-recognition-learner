@@ -5,7 +5,7 @@ from .base import Command
 
 
 class FontsCommand(Command):
-    name = 'fonts'
+    name = 'extract_fonts'
     help = 'Extracts pseudo-handwritten fonts from Google fonts folder'
 
     def configure_parser(self, parser):

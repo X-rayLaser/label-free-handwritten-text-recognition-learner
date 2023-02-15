@@ -4,14 +4,14 @@ import torch
 
 from PIL import Image
 
-from hwr_self_train.training import TrainingLoop
-from hwr_self_train.evaluation import evaluate
-from hwr_self_train.training import print_metrics
-from hwr_self_train.environment import TuningEnvironment
-from hwr_self_train.formatters import show_progress_bar
-from hwr_self_train.decoding import decode_and_score
-from hwr_self_train.datasets import PseudoLabeledDataset
-from hwr_self_train.session import SessionDirectoryLayout
+from lafhterlearn.training import TrainingLoop
+from lafhterlearn.evaluation import evaluate
+from lafhterlearn.training import print_metrics
+from lafhterlearn.environment import TuningEnvironment
+from lafhterlearn.formatters import show_progress_bar
+from lafhterlearn.decoding import decode_and_score
+from lafhterlearn.datasets import PseudoLabeledDataset
+from lafhterlearn.session import SessionDirectoryLayout
 from .base import Command
 
 

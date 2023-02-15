@@ -1,31 +1,61 @@
-# Introduction
+# Label-Free Handwritten Text Recognition Learner 
 
-Label-Free Handwritten Text Recognition Learner (lafhterlearn) is a toolkit providing 
+It is a toolkit providing 
 a set of tools for training a neural net to recognize handwritten words.
 No labeled data (i.e. image transcripts) is needed. This is achieved by first pretraining the model on large set of 
 synthetic handwriting images. After that the network is fine-tuned on a set of real unlabeled handwriting images 
 through self-training technique.
 
-One only needs to provide (pseudo) handwritten fonts, text corpora
-(to learn probability distribution over set of words), and real handwriting images. Although images do not
-need to be transcribed, small subset of transcribed/labeled images will be helpful for estimating metrics.
+This implementation is based on the following paper: [Self-Training of Handwritten Word Recognition for
+Synthetic-to-Real Adaptation](https://arxiv.org/abs/2206.03149).
 
-This implementation is based on the [paper](https://arxiv.org/abs/2206.03149).
+# What is taken care of
+
+Concretely, the toolkit implements the following tasks:
+- extracting probability distribution from text corpora
+- generating synthetic handwritten word images
+- training on synthetic images
+- fine-tuning on real (handwritten word) images
+- evaluating a pretrained model by computing metrics (loss, CER, WER, etc.)
+- using the pretrained model to recognize handwritten words
+- saving/retrieving model checkpoints 
+
+# What needs to be provided
+- handwritten fonts
+- text corpora
+- real unlabeled images of handwritten words
+- optionally, real labeled images of handwritten words (see the note)
+
+Note: although images do not
+need to be transcribed, small subset of transcribed/labeled images will be helpful for estimating metrics.
 
 # Prerequisites
 
 Python version 3.8.9 or higher.
+
+# Installation
+
+It is recommended to install the package using virtual environment, rather than installing it globally.
+The easiest way is to install it from PyPI:
+```
+pip install lafhterlearn
+```
+
+Alternatively, you can clone the repository, then within the repository run:
+```
+pip install -r requirements.txt
+```
 
 # Quick start
 
 - Under the repository folder create a directory called "fonts" and fill it with TrueType fonts with extensions
 otf or ttf
 - Similarly, create a directory called "corpora"
-- Download a few books from [Project Gutenberg](https://www.gutenberg.org/browse/scores/top) and save them to
-"corpora" directory (alternatively, find other corpora in plain text form and put them here)
+- find text corpora and store them in the "corpora" directory as plain text files 
+(you can find a few books to download [here](https://www.gutenberg.org/browse/scores/top))
 - Build word distribution and save it in "word_distribution.csv" file with this command:
 ```
-python prepare_dictionary.py word_distribution.csv --corpora-dir corpora --with-freq
+lafhterlearn word_distr word_distribution.csv --corpora-dir corpora --with-freq
 ```
 - Create a directory with name "tuning_data".
 Within that directory create a subdirectory named "unlabeled" and put handwriting image
@@ -36,34 +66,34 @@ an image could have this name "apple.jpg" (it will be assumed to have label "app
 hwr_self_train.configuration.Configuration class and define some settings (these will override defaults
 specified by hwr_self_train.configuration.Configuration class):
 ```
-from hwr_self_train import configuration
+from lafhterlearn import configuration
 
 class Configuration(configuration.Configuration):
     def __init__(self):
         super().__init__()
-        self.image_height = 96
+        self.image_height = 64
         self.hidden_size = 128
         self.batch_size = 32
 ```
 - create a training session:
 ```
-python create_session.py my_config.py
+lafhterlearn make_session my_config.py
 ```
 - Start/resume pretraining on synthetic handwriting images:
 ```
-python pretrain.py session
+lafhterlearn pretrain session
 ```
 - Fine-tune the model on real handwriting images (possibly unlabeled)
 ```
-python finetune.py session
+lafhterlearn finetune session
 ```
 - Transcribe image with real handwritten word:
 ```
-python transcribe.py session path/to/some/image.png
+lafhterlearn transcribe session path/to/some/image.png
 ```
 - Evaluate the model and compute metrics:
 ```
-python evaluate.py session
+lafhterlearn evaluate session
 ```
 
 For more details about each step, see the sections below.
@@ -104,7 +134,7 @@ git clone https://github.com/google/fonts.git
 Now, execute the following command to extract only handwritten fonts.
 In this case it will extract up to 250 handwritten fonts with latin charset and save them to "fonts" directory:
 ```
-python prepare_fonts.py path/to/google_fonts/repository fonts --num-fonts 250 --lang latin
+lafhterlearn extract_fonts path/to/google_fonts/repository fonts --num-fonts 250 --lang latin
 ```
 
 Alternatively, you can manually create fonts directory and fill it with fonts of your choosing.
@@ -119,7 +149,7 @@ probability. The next optional section gives a little more details.
 If you have a directory containing text corpora as a plain text files,
 you can build word distribution with this command:
 ```
-python prepare_dictionary.py word_distribution.csv --corpora-dir path/to/corpora --with-freq
+lafhterlearn word_distr word_distribution.csv --corpora-dir path/to/corpora --with-freq
 ```
 
 ### Word samplers
@@ -153,7 +183,7 @@ Alternatively, you can create your own class inheriting from default one and ove
 create a new Python module "my_config.py". Within it, create a class and fill it with the following
 (replace provided values with yours):
 ```
-from hwr_self_train import configuration
+from lafhterlearn import configuration
 
 class Configuration(configuration.Configuration):
     def __init__(self):
@@ -166,7 +196,7 @@ class Configuration(configuration.Configuration):
         self.fonts_dir = './fonts'
         
         # set the word sampler to be based on word frequencies/probabilities
-        self.word_sampler = 'hwr_self_train.word_samplers.FrequencyBasedSampler'
+        self.word_sampler = 'lafhterlearn.word_samplers.FrequencyBasedSampler'
         
         # relative path to the word probabilities 
         self.sampler_data_file = "word_distribution.csv"
@@ -177,14 +207,14 @@ class Configuration(configuration.Configuration):
         # more options to override
 ```
 
-For more details, see ```hwr_self_train.configuration.Configuration``` class to see which configuration options
+For more details, see ```lafhterlearn.configuration.Configuration``` class to see which configuration options
 are possible.
 
 # Creating a new training session
 
 To create a fresh new training session using a default configuration, run the following command:
 ```
-python create_session.py hwr_self_train.configuration
+lafhterlearn create_session lafhterlearn.configuration
 ```
 
 This command will create a new directory called "session" in the current working directory. "session" will
@@ -195,7 +225,7 @@ and model checkpoints.
 
 To start/resume pretraining, run the command:
 ```
-python pretrain.py session
+lafhterlearn pretrain session
 ```
 
 It takes a single argument, the path to the session directory.
@@ -208,7 +238,7 @@ it will continue from the last saved checkpoint.
 
 To evaluate metrics, run the command:
 ```
-python evaluate.py session
+lafhterlearn evaluate session
 ```
 
 In order to evaluate the model it will be loaded from the latest checkpoint.
@@ -216,11 +246,11 @@ Again, it expects user to provide a path to the session directory
 
 # Fine-tuning
 ```
-python finetune.py session
+lafhterlearn finetune session
 ```
 
 # Use the model to transcribe images
 Finally, once you have a trained model, you can transcribe real handwritten words:
 ```
-python transcribe.py session path/to/some/image.png
+lafhterlearn transcribe session path/to/some/image.png
 ```

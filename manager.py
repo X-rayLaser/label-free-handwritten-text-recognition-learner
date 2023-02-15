@@ -1,4 +1,4 @@
-from hwr_self_train.cmd_api import execute_command
+from lafhterlearn.cmd_api import execute_command
 
 
 if __name__ == '__main__':

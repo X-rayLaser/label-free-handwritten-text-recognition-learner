@@ -1,5 +1,5 @@
 from unittest import TestCase
-from hwr_self_train.metrics import Metric
+from lafhterlearn.metrics import Metric
 
 
 class MetricTests(TestCase):

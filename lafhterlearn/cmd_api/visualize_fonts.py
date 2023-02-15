@@ -2,8 +2,8 @@ import os
 
 from PIL import ImageFont
 
-from hwr_self_train.word_samplers import UniformSampler
-from hwr_self_train.data_generator import SimpleRandomWordGenerator, add_spacing
+from lafhterlearn.word_samplers import UniformSampler
+from lafhterlearn.data_generator import SimpleRandomWordGenerator, add_spacing
 from .base import Command
 
 

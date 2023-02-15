@@ -1,7 +1,7 @@
-from hwr_self_train.evaluation import evaluate
-from hwr_self_train.training import print_metrics
-from hwr_self_train.environment import Environment
-from hwr_self_train.session import SessionDirectoryLayout
+from lafhterlearn.evaluation import evaluate
+from lafhterlearn.training import print_metrics
+from lafhterlearn.environment import Environment
+from lafhterlearn.session import SessionDirectoryLayout
 
 from .base import Command
 

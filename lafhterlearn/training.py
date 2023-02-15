@@ -4,11 +4,11 @@ from typing import Any, List, AnyStr
 import torch
 from torch.utils.data import DataLoader
 
-from hwr_self_train.formatters import Formatter
-from hwr_self_train.metrics import MetricsSetCalculator, Metric
-from hwr_self_train.recognition import WordRecognitionPipeline
-from hwr_self_train.tokenizer import CharacterTokenizer
-from hwr_self_train.augmentation import WeakAugmentation, StrongAugmentation
+from lafhterlearn.formatters import Formatter
+from lafhterlearn.metrics import MetricsSetCalculator, Metric
+from lafhterlearn.recognition import WordRecognitionPipeline
+from lafhterlearn.tokenizer import CharacterTokenizer
+from lafhterlearn.augmentation import WeakAugmentation, StrongAugmentation
 
 
 def print_metrics(computed_metrics, epoch):
