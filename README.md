@@ -62,22 +62,16 @@ Within that directory create a subdirectory named "unlabeled" and put handwritin
 files (jpg or png) in there. Optionally, to evaluate your fine-tuned model, you can add another subdirectory called "labeled".
 It should contain image files whose names (excluding the file extension part) match their transcriptions. For example,
 an image could have this name "apple.jpg" (it will be assumed to have label "apple").
-- create a configuration file called my_config.py, define a class inheriting a 
-hwr_self_train.configuration.Configuration class and define some settings (these will override defaults
-specified by hwr_self_train.configuration.Configuration class):
+- create a configuration file called my_config.yml and define some settings (these will override defaults),
+for instance:
 ```
-from lafhterlearn import configuration
-
-class Configuration(configuration.Configuration):
-    def __init__(self):
-        super().__init__()
-        self.image_height = 64
-        self.hidden_size = 128
-        self.batch_size = 32
+image_height: 64
+hidden_size: 128
+batch_size: 32
 ```
 - create a training session:
 ```
-lafhterlearn make_session my_config.py
+lafhterlearn make_session --config_file my_config.yml
 ```
 - Start/resume pretraining on synthetic handwriting images:
 ```
@@ -177,48 +171,31 @@ It should contain image files whose names (excluding the file extension part) ma
 
 ## 4.Configuration
 
-Final piece is a configuration class. 
-You can use default configuration class if it suits your needs at ```hwr_self_train.configuration.Configuration```.
-Alternatively, you can create your own class inheriting from default one and override its settings. To do so, 
-create a new Python module "my_config.py". Within it, create a class and fill it with the following
-(replace provided values with yours):
+Final piece is a configuration. By default, default configuration options are used.
+For documentation purpose, these are defined in file default_config.yml under the root of the repository.
+You can always override defaults with your own configuration file.
+For example, you can create "my_config.yml" configuration file and change the value for batch size:
 ```
-from lafhterlearn import configuration
-
-class Configuration(configuration.Configuration):
-    def __init__(self):
-        super().__init__()
-        
-        # specifies the batch size used for both pretraining and fine-tuning phases
-        self.batch_size = 32
-        
-        # relative path to a directory of fonts 
-        self.fonts_dir = './fonts'
-        
-        # set the word sampler to be based on word frequencies/probabilities
-        self.word_sampler = 'lafhterlearn.word_samplers.FrequencyBasedSampler'
-        
-        # relative path to the word probabilities 
-        self.sampler_data_file = "word_distribution.csv"
-        
-        # relative path to the directory with real data used to fine-tune the model on
-        self.tuning_data_dir = 'tuning_data'
-        
-        # more options to override
+batch_size: 16
 ```
 
-For more details, see ```lafhterlearn.configuration.Configuration``` class to see which configuration options
+For more details, see ```default_config.yml``` file to see which configuration options
 are possible.
 
 # Creating a new training session
 
 To create a fresh new training session using a default configuration, run the following command:
 ```
-lafhterlearn create_session lafhterlearn.configuration
+lafhterlearn make_session
+```
+
+To create new training session with custom configuration, add a parameter --config_file:
+```
+lafhterlearn make_session --config_file my_config.yml
 ```
 
 This command will create a new directory called "session" in the current working directory. "session" will
-contain copy of configuration, information about model architecture, CSV with training history,
+contain copy of configuration, information about model architecture, CSV file with training history,
 and model checkpoints.
 
 # Resume pretraining

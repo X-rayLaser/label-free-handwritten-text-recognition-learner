@@ -24,7 +24,7 @@ class CreateSessionCommand(Command):
 
 
 def configure_parser(parser):
-    parser.add_argument('config_file', type=str,
+    parser.add_argument('--config_file', type=str, default='',
                         help='Location of the configuration file (must be a Python module).')
 
 
@@ -33,6 +33,9 @@ def run(args):
 
 
 def get_config(config_file) -> Configuration:
+    if not config_file:
+        return Configuration()
+
     with open(config_file) as f:
         yml_spec = f.read()
 
