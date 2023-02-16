@@ -4,3 +4,4 @@ Pillow>=8.4.0, < 10
 torchmetrics < 1
 nltk
 numpy
+pyyaml

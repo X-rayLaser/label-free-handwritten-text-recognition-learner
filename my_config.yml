@@ -1,0 +1,177 @@
+# Define which PyTorch optimizer to use for both encoder and decoder networks
+optimizer_conf: &optimizer_conf
+  class: torch.optim.Adam
+  kwargs: { lr: 0.0001 }
+
+# Define a set of character that the model is capable of recognizing
+charset: &charset
+  abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+# Define a loss function to use and transform class that transforms loss inputs.
+# This specifies the masked cross entropy loss with label smoothing
+loss_conf: &loss_conf
+  class: lafhterlearn.loss_functions.MaskedCrossEntropy
+  kwargs: { reduction: sum, label_smoothing: 0.6 }
+  transform:
+    class: lafhterlearn.loss_functions.LossTargetTransform
+    kwargs: { charset: *charset }
+
+# Define Character Error Rate (CER) metric
+cer_conf: &cer_conf
+  class: torchmetrics.CharErrorRate
+  transform:
+    class: lafhterlearn.decoding.DecodeBatchTransform
+    kwargs: { charset: *charset }
+
+# Define Word Error Rate (CER) metric
+wer_conf: &wer_conf
+  class: torchmetrics.WordErrorRate
+  transform:
+    class: lafhterlearn.decoding.DecodeBatchTransform
+    kwargs: { charset: *charset }
+
+# Define which device to use, "auto" means pick cuda when available
+device: auto
+
+# Define maximum width of images. When set, images will be right padded
+# using white background to be of max_image_width width.
+# Otherwise, each image in a given batch will be right padded to have the width
+# of the image with the largest width in that batch
+max_image_width: null
+
+# Define maximum height of images.
+# Images taller than image_height will be resized
+# to the image_height height preserving the aspect ratio.
+# Images with height smaller than image_height will be padded to the bottom to
+# have specified image_height
+image_height: &image_height
+  64
+
+# Define the number of hidden units in RNN of the encoder
+hidden_size: &hidden_size
+  128
+
+# Define decoder parameters such as number of hidden units,
+# number of convolutional filters (in the attention network) and their kernel size
+decoder_params:
+  decoder_hidden_size: *hidden_size
+  filters: 10
+  kernel_size: 5
+
+# Define directory with fonts (expects files with .otf and .ttf extensions)
+fonts_dir: fonts
+
+# Define configuration options for synthetic image generator.
+# Every image will be grayscale image.
+# Each option sets the range of values to choose from uniformly and randomly
+data_generator_options:
+  bg_range: [ 200, 255 ] # background intensities
+  color_range: [ 0, 50 ] # foreground (writing color) intensities
+  stroke_fill_range: [ 0, 50 ] # intensities for stroke fill color
+  font_size_range: [ 50, 100 ] # font sizes in pixels
+  rotation_range: [ 0, 0 ] # rotation angles measured in degrees
+  spaces_range: [ 0, 2 ] # the number of narrow spaces between word letters
+
+# Define the number of synthetic examples to generate per epoch.
+# It is important to remember that examples from previous epoch will not be
+# reused in a consecutive ones. Each epoch will work with different synthetic training examples
+# generated on the fly. In fact, the model will not see any image more than once.Thus, epochs are
+# used here only for convenience to help track model performance and save checkpoints.
+training_set_size: 50000
+
+# Define the number of synthetic examples to use to compute metrics.
+# In this case, validation examples generated for previous epoch will be reused
+# in consecutive ones.
+validation_set_size: 2500
+
+# Define batch size. The same value is used for training on both synthetic and real images.
+# The same batch size is used when computing metrics and making batch predictions.
+batch_size: 32
+
+# Define the number of parallel workers in data loader.
+# It is strongly recommended not to change this value
+num_workers: 0
+
+# Define the loss function
+loss_function: *loss_conf
+
+# Define encoder optimizer
+encoder_optimizer: *optimizer_conf
+
+# Define decoder optimizer
+decoder_optimizer: *optimizer_conf
+
+# Define a set of metrics to compute on synthetic training data with augmentation.
+# The form metric_name: metric_config
+# Uncomment the line starting with WER to add Word Error Rate to the set of metric to compute
+training_metrics:
+  loss: *loss_conf # masked cross entropy
+  CER: *cer_conf   # Character Error Rate (CER)
+  #WER: *wer_conf  # Word Error Rate (WER)
+
+# Define a set of metrics to compute on synthetic training data
+# using the same augmentation used in training dataset
+train_val_metrics:
+  train-val loss: *loss_conf
+  train-val CER: *cer_conf
+  #train-val WER: *wer_conf
+
+# Define a set of metrics to compute on synthetic validation data without augmentation
+validation_metrics:
+  val loss: *loss_conf
+  val CER: *cer_conf
+  #val WER: *wer_conf
+
+# Define a set of metrics to compute on real images dataset without applying augmentation.
+# This is going to be a dataset with distribution close to one seen in production
+test_metrics:
+    test loss: *loss_conf
+    test CER: *cer_conf
+    #test WER: *wer_conf
+
+# Define relative path to the directory containing all the information
+# about the training session such as model architecture parameters, checkpoints,
+# training configuration, history, etc.
+session_dir: session
+
+# Define for each dataset fraction of examples that will be used for computing metrics
+evaluation_steps:
+  training_set: 0.1
+  train_validation_set: 1.0
+  validation_set: 1.0
+  test_set: 0.5
+
+# Define the number of epochs for the first phase (training the model on synthetic images)
+epochs: 50
+
+# Define the number of epochs for the second phase (synthetic-to-real adaptation)
+tuning_epochs: 50
+
+# Define the word sampler class
+word_sampler: lafhterlearn.word_samplers.FrequencyBasedSampler
+
+# Define the data consumable by chosen word sampler
+sampler_data_file: word_distribution.csv
+
+# Define the path to the real image directory
+tuning_data_dir: tuning_data
+
+# Define a confidence threshold used in the second phase when the model is trained on images
+# it labels by itself. Must be between 0 and 0.6
+confidence_threshold: 0.4
+
+# Define which trainer class to use during the second phase.
+# If the value is not "simple_trainer", fine-tuning procedure will
+# involve consistency regularization
+tuning_trainer_factory: simple_trainer
+
+# Define configuration options applied when training with consistency regularization
+weak_augment_options:
+  p_augment: 0.4
+  target_height: *image_height
+  fill: 255
+  rotation_degrees_range: [ -5, 5 ]
+  blur_size: 3
+  blur_sigma: [ 1, 1 ]
+  noise_sigma: 10
+  should_fit_height: False

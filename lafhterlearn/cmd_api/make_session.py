@@ -1,6 +1,7 @@
 import os
-import importlib
 import json
+
+import yaml
 
 import torch
 
@@ -32,8 +33,21 @@ def run(args):
 
 
 def get_config(config_file) -> Configuration:
-    conf_module = importlib.import_module(config_file)
-    return conf_module.Configuration()
+    with open(config_file) as f:
+        yml_spec = f.read()
+
+    config_options = yaml.safe_load(yml_spec)
+
+    config = Configuration()
+
+    for name, value in config_options.items():
+        if name == 'device':
+            if value != 'auto':
+                config.device = torch.device(value)
+        else:
+            setattr(config, name, value)
+
+    return config
 
 
 def prepare_session(config):

@@ -64,9 +64,9 @@ class Configuration:
         self.batch_size = 32
         self.num_workers = 0
 
-        self.loss_conf = loss_conf
+        #self.loss_conf = loss_conf
 
-        self.cer_conf = cer_conf
+        #self.cer_conf = cer_conf
 
         self.loss_function = loss_conf
 
