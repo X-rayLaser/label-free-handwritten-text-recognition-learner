@@ -14,3 +14,4 @@ session/
 pretrain_history.csv
 words.txt
 word_distribution.csv
+my_config.yml

@@ -109,11 +109,6 @@ class Environment:
         val_loader = self._create_data_loader(SyntheticOnlineDatasetCached,
                                               config.validation_set_size)
 
-        test_ds_path = os.path.join(config.tuning_data_dir, "labeled")
-        test_ds = RealLabeledDataset(test_ds_path)
-        test_loader = DataLoader(test_ds, batch_size=config.batch_size,
-                                 num_workers=config.num_workers, collate_fn=collate)
-
         trainer = Trainer(recognizer, training_loader, loss_fn, tokenizer)
 
         epochs_trained = self._get_trained_epochs()
@@ -137,15 +132,23 @@ class Environment:
                                      config.evaluation_steps['validation_set'],
                                      close_loop_prediction=True)
 
-        eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
-                                      num_batches=config.evaluation_steps['test_set'],
-                                      close_loop_prediction=True)
-
         self.neural_pipeline = neural_pipeline
         self.epochs_trained = epochs_trained
         self.training_loop = training_loop
         self.history_saver = HistoryCsvSaver(session_layout.history)
-        self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val, eval_on_test]
+        self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val]
+
+        test_ds_path = os.path.join(config.tuning_data_dir, "labeled")
+
+        if os.path.isdir(test_ds_path):
+            test_ds = RealLabeledDataset(test_ds_path)
+            test_loader = DataLoader(test_ds, batch_size=config.batch_size,
+                                     num_workers=config.num_workers, collate_fn=collate)
+
+            eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
+                                          num_batches=config.evaluation_steps['test_set'],
+                                          close_loop_prediction=True)
+            self.eval_tasks.append(eval_on_test)
 
     def save_checkpoint(self, epoch, metrics):
         keeper = CheckpointKeeper(self.session_layout.checkpoints)
@@ -178,9 +181,6 @@ class Environment:
 class TuningEnvironment:
     def __init__(self, config: Configuration):
         self.config = config
-        test_ds_path = os.path.join(config.tuning_data_dir, "labeled")
-        test_ds = RealLabeledDataset(test_ds_path)
-        test_loader = self._create_loader(test_ds)
 
         unlabeled_ds_path = os.path.join(config.tuning_data_dir, "unlabeled")
         unlabeled_ds = RealUnlabeledDataset(unlabeled_ds_path)
@@ -208,10 +208,6 @@ class TuningEnvironment:
 
         eval_steps = config.evaluation_steps
 
-        eval_on_test_ds = EvaluationTask(recognizer, test_loader, test_metrics,
-                                         num_batches=eval_steps["test_set"],
-                                         close_loop_prediction=True)
-
         self.unlabeled_loader = unlabeled_loader
         self.tokenizer = tokenizer
         self.threshold = config.confidence_threshold
@@ -220,9 +216,20 @@ class TuningEnvironment:
         self.recognizer = recognizer
         self.metric_fns = metric_fns
 
-        self.tasks = [eval_on_test_ds]
+        self.tasks = []
 
         self.history_saver = HistoryCsvSaver(session_layout.tuning_history)
+
+        test_ds_path = os.path.join(config.tuning_data_dir, "labeled")
+
+        if os.path.isdir(test_ds_path):
+            test_ds = RealLabeledDataset(test_ds_path)
+            test_loader = self._create_loader(test_ds)
+
+            eval_on_test_ds = EvaluationTask(recognizer, test_loader, test_metrics,
+                                             num_batches=eval_steps["test_set"],
+                                             close_loop_prediction=True)
+            self.tasks.append(eval_on_test_ds)
 
     def _create_loader(self, ds):
         return DataLoader(ds,
