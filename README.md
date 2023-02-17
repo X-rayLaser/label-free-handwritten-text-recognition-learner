@@ -250,3 +250,19 @@ Finally, once you have a trained model, you can transcribe handwritten words:
 ```
 lafhterlearn transcribe session path/to/some/image.png
 ```
+
+# CLI usage
+
+Show all available commands:
+```
+lafhterlearn --help
+```
+
+Show usage for a particular command (for example, data):
+```
+lafhterlearn data --help
+```
+
+# Support
+
+If you find this repository useful, consider starring it by clicking at the ★ button. It will be much appreciated.

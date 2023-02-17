@@ -18,7 +18,8 @@ dependencies = [
     "Pillow>=8.4.0, < 10",
     "torchmetrics < 1",
     "nltk",
-    "numpy"
+    "numpy",
+    "pyyaml"
 ]
 keywords = [
     "machine-learning", "deep-learning", "neural-networks", "pytorch",
