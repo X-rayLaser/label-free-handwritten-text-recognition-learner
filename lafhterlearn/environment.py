@@ -99,7 +99,6 @@ class Environment:
         loss_fn = prepare_loss(config.loss_function)
 
         train_metric_fns = prepare_metrics(config.training_metrics)
-        train_val_metric_fns = prepare_metrics(config.train_val_metrics)
         val_metric_fns = prepare_metrics(config.validation_metrics)
         test_metric_fns = prepare_metrics(config.test_metrics)
 
@@ -121,10 +120,6 @@ class Environment:
                                        config.evaluation_steps['training_set'],
                                        close_loop_prediction=False)
 
-        eval_on_train_val = EvaluationTask(recognizer, val_loader, train_val_metric_fns,
-                                           config.evaluation_steps['train_validation_set'],
-                                           close_loop_prediction=False)
-
         val_preprocessor = make_validation_pipeline(max_width=config.max_image_width,
                                                     max_height=config.image_height)
         val_recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, val_preprocessor)
@@ -136,7 +131,7 @@ class Environment:
         self.epochs_trained = epochs_trained
         self.training_loop = training_loop
         self.history_saver = HistoryCsvSaver(session_layout.history)
-        self.eval_tasks = [eval_on_train, eval_on_train_val, eval_on_val]
+        self.eval_tasks = [eval_on_train, eval_on_val]
 
         test_ds_path = os.path.join(config.tuning_data_dir, "labeled")
 

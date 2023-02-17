@@ -109,13 +109,6 @@ training_metrics:
   CER: *cer_conf   # Character Error Rate (CER)
   #WER: *wer_conf  # Word Error Rate (WER)
 
-# Define a set of metrics to compute on synthetic training data
-# using the same augmentation used in training dataset
-train_val_metrics:
-  train-val loss: *loss_conf
-  train-val CER: *cer_conf
-  #train-val WER: *wer_conf
-
 # Define a set of metrics to compute on synthetic validation data without augmentation
 validation_metrics:
   val loss: *loss_conf
@@ -137,7 +130,6 @@ session_dir: session
 # Define for each dataset fraction of examples that will be used for computing metrics
 evaluation_steps:
   training_set: 0.1
-  train_validation_set: 1.0
   validation_set: 1.0
   test_set: 0.5
 

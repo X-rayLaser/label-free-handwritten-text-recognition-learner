@@ -64,10 +64,6 @@ class Configuration:
         self.batch_size = 32
         self.num_workers = 0
 
-        #self.loss_conf = loss_conf
-
-        #self.cer_conf = cer_conf
-
         self.loss_function = loss_conf
 
         self.encoder_optimizer = optimizer_conf
@@ -76,12 +72,6 @@ class Configuration:
         self.training_metrics = {
             'loss': loss_conf,
             'CER': cer_conf
-        }
-
-        # evaluated using the same augmentation used in training dataset
-        self.train_val_metrics = {
-            'train-val loss': loss_conf,
-            'train-val CER': cer_conf
         }
 
         # evaluated without using augmentation
@@ -102,7 +92,6 @@ class Configuration:
 
         self.evaluation_steps = {
             'training_set': 0.1,
-            'train_validation_set': 1.0,
             'validation_set': 1.0,
             'test_set': 0.5
         }

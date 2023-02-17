@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 
 logger.setLevel(logging.DEBUG)
 
-handler = logging.FileHandler('hwr_self_training.log')
+handler = logging.FileHandler('lafhterlearn.log')
 handler.setLevel(logging.DEBUG)
 
 # create formatter
