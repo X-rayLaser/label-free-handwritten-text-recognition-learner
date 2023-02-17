@@ -11,6 +11,7 @@ corpora/
 iam/
 temp/
 session/
+dist/
 pretrain_history.csv
 words.txt
 word_distribution.csv
