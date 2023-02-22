@@ -40,20 +40,21 @@ class SimpleRandomWordGenerator:
             stroke_width = random.randint(*self.stroke_width_range)
             num_spaces = random.randint(*self.spaces_range)
 
-            word = add_spacing(word, num_spaces)
+            word_with_spaces = add_spacing(word, num_spaces)
             try:
-                image = self.create_image(word, font, font_size,
+                image = self.create_image(word_with_spaces, font, font_size,
                                           background=background, color=color,
                                           stroke_width=stroke_width, stroke_fill=stroke_fill)
                 if image.height > 0 and image.width > 0:
                     yield image, word
             except Exception:
                 msg = 'Failed to create image for "{}": font "{}", font size {}, ' \
-                      'background {}, color {}, stroke width {} stroke fill {}'
+                      'background {}, color {}, stroke width {}, stroke fill {}, # spaces {}'
 
                 # todo: this is wrong when using extra worker processes in dataloader
                 logger.exception(msg.format(
-                    word, font_file, font_size, background, color, stroke_width, stroke_fill
+                    word, font_file, font_size, background, color,
+                    stroke_width, stroke_fill, num_spaces
                 ))
 
     def create_image(self, word, font, size=64, background=255, color=0,
