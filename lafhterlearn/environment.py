@@ -125,7 +125,7 @@ class Environment:
         val_recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, val_preprocessor)
         eval_on_val = EvaluationTask(val_recognizer, val_loader, val_metric_fns,
                                      config.evaluation_steps['validation_set'],
-                                     close_loop_prediction=True)
+                                     close_loop_prediction=False)
 
         self.neural_pipeline = neural_pipeline
         self.epochs_trained = epochs_trained
@@ -140,10 +140,12 @@ class Environment:
             test_loader = DataLoader(test_ds, batch_size=config.batch_size,
                                      num_workers=config.num_workers, collate_fn=collate)
 
-            eval_on_test = EvaluationTask(val_recognizer, test_loader, test_metric_fns,
-                                          num_batches=config.evaluation_steps['test_set'],
-                                          close_loop_prediction=True)
-            self.eval_tasks.append(eval_on_test)
+            for name, metric_fn in test_metric_fns.items():
+                close_loop_on = config.close_loop_mode.get(name, False)
+                task = EvaluationTask(val_recognizer, test_loader, {name: metric_fn},
+                                      num_batches=config.evaluation_steps['test_set'],
+                                      close_loop_prediction=close_loop_on)
+                self.eval_tasks.append(task)
 
     def save_checkpoint(self, epoch, metrics):
         keeper = CheckpointKeeper(self.session_layout.checkpoints)
@@ -221,10 +223,12 @@ class TuningEnvironment:
             test_ds = RealLabeledDataset(test_ds_path)
             test_loader = self._create_loader(test_ds)
 
-            eval_on_test_ds = EvaluationTask(recognizer, test_loader, test_metrics,
-                                             num_batches=eval_steps["test_set"],
-                                             close_loop_prediction=True)
-            self.tasks.append(eval_on_test_ds)
+            for name, metric_fn in test_metrics.items():
+                close_loop_on = config.close_loop_mode.get(name, False)
+                task = EvaluationTask(recognizer, test_loader, {name: metric_fn},
+                                      num_batches=eval_steps["test_set"],
+                                      close_loop_prediction=close_loop_on)
+                self.tasks.append(task)
 
     def _create_loader(self, ds):
         return DataLoader(ds,

@@ -122,6 +122,14 @@ test_metrics:
     test CER: *cer_conf
     #test WER: *wer_conf
 
+# whether to run inference in close loop mode when calculating test metrics
+# which means that decoder RNN will not have access to the right transcript,
+# rather on each step decoder will be fed most likely token predicted by it on previous step
+close_loop_mode:
+    test loss: False
+    test CER: True
+    #test WER: True
+
 # Define relative path to the directory containing all the information
 # about the training session such as model architecture parameters, checkpoints,
 # training configuration, history, etc.

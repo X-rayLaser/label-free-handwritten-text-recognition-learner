@@ -86,6 +86,12 @@ class Configuration:
             'test CER': cer_conf
         }
 
+        # whether to run inference in close loop mode when calculating test metrics
+        self.close_loop_mode = {
+            'test loss': False,
+            'test CER': True
+        }
+
         self.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
         self.session_dir = 'session'
