@@ -5,3 +5,4 @@ torchmetrics < 1
 nltk
 numpy
 pyyaml
+h5py

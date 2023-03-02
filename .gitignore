@@ -15,4 +15,7 @@ dist/
 pretrain_history.csv
 words.txt
 word_distribution.csv
+ngrams.json
 my_config.yml
+tuning_data.zip
+ngram_model.h5

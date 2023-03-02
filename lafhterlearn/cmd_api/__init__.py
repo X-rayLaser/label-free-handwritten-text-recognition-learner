@@ -2,7 +2,7 @@ import argparse
 
 from .base import commands
 from . import (data, evaluate, finetune, extract_fonts, pretrain,
-               make_session, transcribe, visualize_fonts, word_distr)
+               make_session, transcribe, visualize_fonts, word_distr, learn_ngrams)
 
 
 def parse_all_args():
