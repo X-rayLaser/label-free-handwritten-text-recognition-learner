@@ -39,6 +39,10 @@ device: auto
 # of the image with the largest width in that batch
 max_image_width: null
 
+# Define whether preprocessing pipeline should include operation which resizes
+# all images so that they have height equal to image_height whilst keeping the aspect ratio
+resize_images: False
+
 # Define maximum height of images.
 # Images taller than image_height will be resized
 # to the image_height height preserving the aspect ratio.

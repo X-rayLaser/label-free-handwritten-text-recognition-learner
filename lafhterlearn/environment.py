@@ -92,7 +92,8 @@ class Environment:
         image_pipeline = make_pretraining_pipeline(
             augmentation_options=config.weak_augment_options,
             max_width=config.max_image_width,
-            max_height=config.image_height
+            max_height=config.image_height,
+            resize=config.resize_images
         )
         recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, image_pipeline)
 
@@ -121,7 +122,9 @@ class Environment:
                                        close_loop_prediction=False)
 
         val_preprocessor = make_validation_pipeline(max_width=config.max_image_width,
-                                                    max_height=config.image_height)
+                                                    max_height=config.image_height,
+                                                    resize=config.resize_images)
+
         val_recognizer = WordRecognitionPipeline(neural_pipeline, tokenizer, val_preprocessor)
         eval_on_val = EvaluationTask(val_recognizer, val_loader, val_metric_fns,
                                      config.evaluation_steps['validation_set'],
@@ -196,7 +199,8 @@ class TuningEnvironment:
         keeper.load_latest_checkpoint(encoder_decoder, config.device)
 
         image_preprocessor = make_validation_pipeline(max_width=config.max_image_width,
-                                                      max_height=config.image_height)
+                                                      max_height=config.image_height,
+                                                      resize=config.resize_images)
         recognizer = WordRecognitionPipeline(encoder_decoder, tokenizer, image_preprocessor)
 
         metric_fns = prepare_metrics(config.training_metrics)

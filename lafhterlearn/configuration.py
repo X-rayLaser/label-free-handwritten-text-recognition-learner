@@ -36,6 +36,7 @@ class Configuration:
         #self.max_image_width = 100 * 15
         self.max_image_width = None
 
+        self.resize_images = False
         self.image_height = 64
         self.hidden_size = 128
 
