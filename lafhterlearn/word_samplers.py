@@ -5,25 +5,29 @@ import string
 import numpy as np
 import h5py
 
-from .ngrams import NgramModel
+from .ngrams import NgramModel, ModelProxy
 
 
 class UniformSampler:
-    def __init__(self, words):
-        self.words = words
+    def __init__(self, path):
+        with open(path) as f:
+            self.words = [word.strip() for word in f if word.strip()]
 
     def __call__(self):
         return random.choice(self.words)
 
-    @classmethod
-    def from_file(cls, path):
-        with open(path) as f:
-            words = [word.strip() for word in f if word.strip()]
-            return cls(words)
-
 
 class FrequencyBasedSampler:
-    def __init__(self, words, frequencies, sampling_batch_size=1024):
+    def __init__(self, path, sampling_batch_size=1024):
+        with open(path, newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+
+            words = []
+            frequencies = []
+            for word, freq in reader:
+                words.append(word)
+                frequencies.append(freq)
+
         self.words = words
         self.frequencies = frequencies
         self.rng = np.random.default_rng()
@@ -39,28 +43,15 @@ class FrequencyBasedSampler:
 
         return self.buffer.pop()
 
-    @classmethod
-    def from_file(cls, path):
-        with open(path, newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-
-            words = []
-            freqs = []
-            for word, freq in reader:
-                words.append(word)
-                freqs.append(freq)
-
-            return cls(words, freqs)
-
 
 class NgramBasedSampler:
-    def __init__(self, ngram_model, num_words=10):
-        self.model = ngram_model
+    def __init__(self, path, num_words=10):
+        self.path = path
+        self.proxy = ModelProxy(path)
         self.num_words = num_words
 
     def __call__(self):
-        # todo: make it faster
-        words = self.model.generate(num_words=self.num_words)
+        words = self.proxy.generate(num_words=self.num_words)
         prev = words[0]
 
         seq = [prev]
@@ -74,9 +65,3 @@ class NgramBasedSampler:
                 seq.append(word)
             prev = word
         return ''.join(seq)
-
-    @classmethod
-    def from_file(cls, path):
-        f = h5py.File(path)
-        model = NgramModel.from_h5file(f)
-        return cls(model)

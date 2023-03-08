@@ -167,7 +167,7 @@ class Environment:
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
 
-        sampler = cls.from_file(self.config.sampler_data_file)
+        sampler = cls(self.config.sampler_data_file)
         ds = dataset_class(
             self.config.fonts_dir, dataset_size,
             word_sampler=sampler,

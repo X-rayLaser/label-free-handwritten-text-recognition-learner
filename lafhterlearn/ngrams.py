@@ -181,6 +181,34 @@ class NgramModel:
         return cls(count_tables, vocab)
 
 
+class ModelProxy:
+    def __init__(self, path):
+        with h5py.File(path) as f:
+            self.path = path
+            self.unigram_counts = f["1-grams"][:]  # load array into memory
+
+            def get_order(name):
+                return int(name.split('-')[0])
+
+            names = sorted([k for k in f.keys() if k not in ['1-grams', 'vocab']],
+                           key=get_order)
+
+            self.names_with_orders = [(name, get_order(name)) for name in names]
+            self.vocab = [str(word) for word in f['vocab'].asstr()]
+
+    def generate(self, num_words):
+        with h5py.File(self.path) as f:
+            count_tables = {
+                1: self.unigram_counts
+            }
+            for name, order in self.names_with_orders:
+                group = f[name]
+                count_tables[order] = CountTable(group)
+
+            model = NgramModel(count_tables, self.vocab)
+            return model.generate(num_words)
+
+
 def load_2d_matrix(h5group):
     def parse_chunk_number(name):
         _, number = name.split('_')
