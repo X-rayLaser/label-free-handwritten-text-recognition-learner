@@ -1,9 +1,11 @@
 import itertools
 import os
+import bisect
+
 import h5py
 from nltk.util import ngrams
 import numpy as np
-from .ngram_utils import build_vocab, get_word_stream
+from .ngram_utils import build_vocab, get_word_stream, SparseArray, backoff
 from .formatters import show_progress_bar
 
 
@@ -76,7 +78,6 @@ class CountTable:
         self.counts = load_2d_matrix(count_group)
 
     def get_counts(self, context):
-        import bisect
         context = tuple(context)
         idx = bisect.bisect_left(self.contexts, context)
         if self.contexts[idx] != context:
@@ -84,6 +85,7 @@ class CountTable:
 
         start, end = self.addresses[idx]
 
+        # todo: bulk read
         res = [self.counts[i] for i in range(start, end)]
         #return self.counts[start:end, :]
         return res
@@ -93,14 +95,12 @@ class NgramModel:
     class ProbabilityDistribution:
         def __init__(self, counts_array):
             self.counts_array = counts_array
+            self.pmf = counts_array / sum(counts_array)
+            self.indices = list(range(len(counts_array)))
             self.rng = np.random.default_rng()
 
         def sample(self):
-            counts = self.counts_array
-            pmf = counts / sum(counts)
-
-            indices = list(range(len(counts)))
-            return self.rng.choice(indices, p=pmf)
+            return self.rng.choice(self.indices, p=self.pmf)
 
     def __init__(self, count_tables, vocab):
         self.count_tables = count_tables
@@ -120,25 +120,31 @@ class NgramModel:
 
     def p_next(self, context):
         order = len(context) + 1
-        from .ngram_utils import SparseArray
+
+        prob_dists = []
         for i in range(order, 1, -1):
             count_table = self.count_tables[order]
             try:
                 counts = count_table.get_counts(context)
-                assert len(counts) > 0
-                sparse_array = SparseArray(len(self.vocab))
-                for idx, value in counts:
-                    sparse_array[idx] = value
-
-                a = np.array(list(sparse_array), dtype=int)
-                return self.ProbabilityDistribution(a)
             except ValueError:
-                context = context[1:]
+                dist = np.zeros(len(self.vocab), dtype=np.float32)
+                prob_dists.append(dist)
+            else:
+                a = np.zeros(len(self.vocab), dtype=np.int32)
+                for idx, value in counts:
+                    a[idx] = value
 
-        if not context:
-            unigram_counts = self.count_tables[1]
-            return self.ProbabilityDistribution(unigram_counts)
-        raise Exception('can not build probability distribution')
+                dist = a / sum(a)
+                prob_dists.append(dist)
+
+            context = context[1:]
+
+        unigram_counts = self.count_tables[1]
+        dist = unigram_counts / sum(unigram_counts)
+        prob_dists.append(dist)
+
+        pseudo_probs = backoff(*prob_dists)
+        return self.ProbabilityDistribution(pseudo_probs)
 
     def generate(self, num_words):
         start_token = self.tokenize('<s>')

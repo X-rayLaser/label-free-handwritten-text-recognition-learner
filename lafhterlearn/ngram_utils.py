@@ -164,3 +164,27 @@ def get_word_stream(get_corpus, n):
 
 def get_ngram_stream(get_corpus, n):
     return ngrams(get_word_stream(get_corpus, n), n=n)
+
+
+def backoff(*prob_dists, lam=0.4):
+    """Takes a bunch of probability distributions, higher order distributions, then lower.
+    Returns a list-like object representing probability distribution.
+    """
+
+    if not prob_dists:
+        return []
+
+    dists = [np.array(d, dtype=np.float64) if isinstance(d, list) else d for d in prob_dists]
+
+    pmf = dists[0]
+
+    if len(dists) == 1:
+        return pmf
+
+    if len(dists) > 1:
+        for i, dist in enumerate(dists[1:]):
+            mask = pmf == 0
+            multiplier = lam ** (i + 1)
+            pmf[mask] = dist[mask] * multiplier
+
+    return pmf

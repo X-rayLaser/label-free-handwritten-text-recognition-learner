@@ -2,9 +2,50 @@ import itertools
 from unittest import TestCase
 import h5py
 import os
+import numpy as np
+
 from lafhterlearn.metrics import Metric
-from lafhterlearn.ngram_utils import ExpandableMatrix, RaggedMatrix, SparseMatrix
+from lafhterlearn.ngram_utils import ExpandableMatrix, RaggedMatrix, SparseMatrix, backoff
 from lafhterlearn.ngrams import chunks, sorted_chunks, merge_chunks, bigsort, ChainSequence
+
+
+class BackoffTests(TestCase):
+    def test(self):
+        self.assertEqual([], list(backoff(lam=0.4)))
+
+        self.assertEqual([], list(backoff([], lam=0.4)))
+
+        self.assertEqual([1], list(backoff([1], lam=0.4)))
+
+        self.assertEqual([0., 0.4, 0., 0.6], list(backoff([0, 0.4, 0, 0.6], lam=0.4)))
+        self.assertEqual([0., 0.4, 0., 0.6], list(backoff([0, 0.4, 0, 0.6], lam=0.7)))
+
+        self.assertEqual([1], list(backoff([1], [1], lam=0.4)))
+        self.assertEqual([1], list(backoff([1], [0], lam=0.4)))
+        self.assertEqual([0.4], list(backoff([0], [1], lam=0.4)))
+        self.assertEqual([0], list(backoff([0], [0], lam=0.4)))
+
+        self.assertEqual([0.4, 1.], list(backoff([0, 1], [1, 0], lam=0.4)))
+        self.assertEqual([0., 1.], list(backoff([0, 1], [0, 1], lam=0.4)))
+
+        probs = backoff([0, 1], [0.2, 0.8], lam=0.4)
+        self.assertTrue(np.allclose(np.array([0.08, 1.]), probs))
+
+        probs = backoff([0, 0.5, 0.3, 0, 0.2], [0, 0, 0.4, 0.5, 0.1], lam=0.4)
+        self.assertTrue(np.allclose([0.0, 0.5, 0.3, 0.2, 0.2], probs))
+
+        probs = backoff([1, 0], [1, 0], [1, 0], lam=0.4)
+        self.assertEqual([1, 0], list(probs))
+
+        probs = backoff([1, 0], [0, 1], [1, 0], lam=0.4)
+        self.assertEqual([1, 0.4], list(probs))
+        probs = backoff([1, 0], [0, 1], [0, 1], lam=0.4)
+        self.assertEqual([1, 0.4], list(probs))
+
+        probs = backoff([1, 0], [1, 0], [0, 1], lam=0.4)
+        self.assertEqual([1, 0.4**2], list(probs))
+        probs = backoff([1, 0], [1, 0], [0.2, 0.8], lam=0.4)
+        self.assertEqual([1, 0.8 * 0.4**2], list(probs))
 
 
 class ChainSequenceTests(TestCase):
