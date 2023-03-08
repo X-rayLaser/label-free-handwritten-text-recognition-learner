@@ -105,6 +105,60 @@ class ChainSequenceTests(TestCase):
         self.assertEqual(34, seq[6])
         self.assertEqual(99, seq[7])
 
+    def test_batch_indexing_with_single_subsequence(self):
+        seq = ChainSequence([1, 2, 3, 4, 5])
+
+        self.assertEqual([], seq[1:1])
+        self.assertEqual([], seq[3:1])
+        self.assertEqual([2], seq[1:2])
+        self.assertEqual([2, 3, 4], seq[1:4])
+
+        self.assertEqual([1, 2], seq[:2])
+        self.assertEqual([1, 2], seq[0:2])
+
+        self.assertEqual([3, 4, 5], seq[2:])
+        self.assertEqual([3, 4, 5], seq[2:5])
+
+        self.assertEqual([1, 2, 3, 4, 5], seq[0:5])
+        self.assertEqual([1, 2, 3, 4, 5], seq[:])
+
+    def test_batch_indexing_with_multiple_subsequences(self):
+        seq = ChainSequence([1, 2, 3], [], [4, 5])
+        self.assertEqual([1, 2], seq[0:2])
+        self.assertEqual([1, 2], seq[:2])
+
+        self.assertEqual([4, 5], seq[3:5])
+        self.assertEqual([4, 5], seq[3:])
+
+        self.assertEqual([2, 3, 4], seq[1:4])
+        self.assertEqual([2, 3], seq[1:3])
+
+        self.assertEqual([1, 2, 3, 4, 5], seq[0:5])
+        self.assertEqual([1, 2, 3, 4, 5], seq[:5])
+        self.assertEqual([1, 2, 3, 4, 5], seq[0:])
+        self.assertEqual([1, 2, 3, 4, 5], seq[:])
+
+        seq = ChainSequence([1, 2, 3], [4], [5, 6], [7, 8, 9])
+        self.assertEqual([1, 2], seq[:2])
+        self.assertEqual([1, 2, 3], seq[:3])
+
+        self.assertEqual([3, 4], seq[2:4])
+        self.assertEqual([4], seq[3:4])
+        self.assertEqual([1, 2, 3, 4], seq[:4])
+
+        self.assertEqual([3, 4, 5, 6], seq[2:6])
+        self.assertEqual([4, 5, 6], seq[3:6])
+        self.assertEqual([5, 6], seq[4:6])
+
+        self.assertEqual([2, 3, 4, 5, 6, 7, 8], seq[1:8])
+
+        self.assertEqual([8, 9], seq[7:])
+        self.assertEqual([1, 2, 3, 4, 5, 6, 7, 8, 9], seq[:])
+
+    def test_batch_indexing_with_tuples(self):
+        seq = ChainSequence([(1, 1), (2, 1)], [(3, 0), (4, 2)])
+        self.assertEqual([(1, 1), (2, 1), (3, 0)], seq[:3])
+
 
 class ChunkingTests(TestCase):
     def test(self):

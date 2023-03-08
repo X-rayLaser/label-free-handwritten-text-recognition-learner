@@ -1,6 +1,7 @@
 import itertools
 import os
 import bisect
+from collections import abc
 
 import h5py
 from nltk.util import ngrams
@@ -16,7 +17,7 @@ def build_ngram_model(get_corpus, output_file, n):
     word2int = {word: i for i, word in enumerate(vocab)}
 
     with h5py.File(output_file, mode='w') as f:
-        f.attrs["vocab"] = vocab
+        f.create_dataset("vocab", data=vocab)
 
         unigram_counts = build_unigram_counts(get_corpus, word2int)
 
@@ -84,11 +85,7 @@ class CountTable:
             raise ValueError(f'cannot find counts for context {context}')
 
         start, end = self.addresses[idx]
-
-        # todo: bulk read
-        res = [self.counts[i] for i in range(start, end)]
-        #return self.counts[start:end, :]
-        return res
+        return self.counts[start:end]
 
 
 class NgramModel:
@@ -106,6 +103,9 @@ class NgramModel:
         self.count_tables = count_tables
         self.vocab = vocab
         self.word2id = {word: i for i, word in enumerate(self.vocab)}
+
+        unigram_counts = self.count_tables[1]
+        self.unigram_dist = unigram_counts / sum(unigram_counts)
 
     def tokenize(self, word):
         if word not in self.word2id:
@@ -139,10 +139,7 @@ class NgramModel:
 
             context = context[1:]
 
-        unigram_counts = self.count_tables[1]
-        dist = unigram_counts / sum(unigram_counts)
-        prob_dists.append(dist)
-
+        prob_dists.append(self.unigram_dist)
         pseudo_probs = backoff(*prob_dists)
         return self.ProbabilityDistribution(pseudo_probs)
 
@@ -164,12 +161,12 @@ class NgramModel:
 
     @classmethod
     def from_h5file(cls, f):
-        unigram_counts = f["1-grams"]
+        unigram_counts = f["1-grams"][:]  # load array into memory
 
         def get_order(name):
             return int(name.split('-')[0])
 
-        names = sorted([group for group in f.keys() if group != '1-grams'],
+        names = sorted([k for k in f.keys() if k not in ['1-grams', 'vocab']],
                        key=get_order)
 
         count_tables = {
@@ -180,7 +177,7 @@ class NgramModel:
             group = f[name]
             count_tables[order] = CountTable(group)
 
-        vocab = f.attrs['vocab']
+        vocab = [str(word) for word in f['vocab'].asstr()]
         return cls(count_tables, vocab)
 
 
@@ -207,18 +204,61 @@ class ChainSequence:
         self.intervals = list(zip(cum_lengths[:-1], cum_lengths[1:]))
 
     def __getitem__(self, idx):
-        if not (0 <= idx < len(self)):
-            raise IndexError()
-
-        for (a, b), seq in zip(self.intervals, self.seqs):
-            if a <= idx < b:
-                offset = idx - a
-                return normalize(seq[offset])
-
-        raise IndexError()
+        if isinstance(idx, int):
+            return self.get_item(idx)
+        elif isinstance(idx, abc.Sequence):
+            raise ValueError(f'expects either integer index or slice. Got {idx}')
+        elif isinstance(idx, slice):
+            return self.get_slice(idx)
 
     def __len__(self):
         return sum(len(s) for s in self.seqs)
+
+    def get_slice(self, index_slice):
+        start = index_slice.start
+        stop = index_slice.stop
+
+        if start is None:
+            first_ivl_index = 0
+            first_offset = 0
+        else:
+            first_ivl_index, first_offset = self.locate_index(start)
+
+        if stop is None or self.locate_index(stop) is None:
+            last_ivl_index = len(self.intervals) - 1
+            stop_offset = len(self.seqs[last_ivl_index])
+        else:
+            last_ivl_index, stop_offset  = self.locate_index(stop)
+
+        if first_ivl_index == last_ivl_index:
+            seq = self.seqs[first_ivl_index]
+            res = seq[first_offset:stop_offset]
+        else:
+            first_seq = self.seqs[first_ivl_index]
+            res = first_seq[first_offset:]
+            for i in range(first_ivl_index + 1, last_ivl_index):
+                seq = self.seqs[i]
+                res.extend(seq[:])
+
+            last_seq = self.seqs[last_ivl_index]
+            res.extend(last_seq[:stop_offset])
+
+        return [normalize(it) for it in res]
+
+    def get_item(self, idx):
+        if not (0 <= idx < len(self)):
+            raise IndexError()
+
+        ivl_index, offset = self.locate_index(idx)
+        seq = self.seqs[ivl_index]
+        return normalize(seq[offset])
+
+    def locate_index(self, idx):
+        for i, interval in enumerate(self.intervals):
+            (a, b) = interval
+            if a <= idx < b:
+                offset = idx - a
+                return i, offset
 
 
 def data_to_write(ngrams_with_counts):

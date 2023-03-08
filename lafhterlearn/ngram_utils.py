@@ -167,8 +167,10 @@ def get_ngram_stream(get_corpus, n):
 
 
 def backoff(*prob_dists, lam=0.4):
-    """Takes a bunch of probability distributions, higher order distributions, then lower.
-    Returns a list-like object representing probability distribution.
+    """Simple implementation of stupid backoff.
+
+    Takes a bunch of probability distributions, higher order distributions, then lower.
+    Returns a list-like object representing pseudo probability distribution.
     """
 
     if not prob_dists:
