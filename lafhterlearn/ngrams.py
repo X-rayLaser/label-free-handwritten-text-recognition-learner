@@ -92,7 +92,7 @@ class NgramModel:
     class ProbabilityDistribution:
         def __init__(self, counts_array):
             self.counts_array = counts_array
-            self.pmf = counts_array / sum(counts_array)
+            self.pmf = counts_array / counts_array.sum()
             self.indices = list(range(len(counts_array)))
             self.rng = np.random.default_rng()
 
@@ -123,7 +123,7 @@ class NgramModel:
 
         prob_dists = []
         for i in range(order, 1, -1):
-            count_table = self.count_tables[order]
+            count_table = self.count_tables[i]
             try:
                 counts = count_table.get_counts(context)
             except ValueError:
@@ -134,7 +134,7 @@ class NgramModel:
                 for idx, value in counts:
                     a[idx] = value
 
-                dist = a / sum(a)
+                dist = a / a.sum()
                 prob_dists.append(dist)
 
             context = context[1:]
