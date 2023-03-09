@@ -93,11 +93,10 @@ class NgramModel:
         def __init__(self, counts_array):
             self.counts_array = counts_array
             self.pmf = counts_array / counts_array.sum()
-            self.indices = list(range(len(counts_array)))
             self.rng = np.random.default_rng()
 
         def sample(self):
-            return self.rng.choice(self.indices, p=self.pmf)
+            return self.rng.choice(len(self.pmf), 1, p=self.pmf)[0]
 
     def __init__(self, count_tables, vocab):
         self.count_tables = count_tables
@@ -131,8 +130,9 @@ class NgramModel:
                 prob_dists.append(dist)
             else:
                 a = np.zeros(len(self.vocab), dtype=np.int32)
-                for idx, value in counts:
-                    a[idx] = value
+                indices = counts[:, 0]
+                values = counts[:, 1]
+                a[indices] = values
 
                 dist = a / a.sum()
                 prob_dists.append(dist)
@@ -231,6 +231,8 @@ class ChainSequence:
         cum_lengths = list(itertools.accumulate(lengths, initial=0))
         self.intervals = list(zip(cum_lengths[:-1], cum_lengths[1:]))
 
+        self.ends = [b for a, b in self.intervals]
+
     def __getitem__(self, idx):
         if isinstance(idx, int):
             return self.get_item(idx)
@@ -256,7 +258,7 @@ class ChainSequence:
             last_ivl_index = len(self.intervals) - 1
             stop_offset = len(self.seqs[last_ivl_index])
         else:
-            last_ivl_index, stop_offset  = self.locate_index(stop)
+            last_ivl_index, stop_offset = self.locate_index(stop)
 
         if first_ivl_index == last_ivl_index:
             seq = self.seqs[first_ivl_index]
@@ -271,7 +273,7 @@ class ChainSequence:
             last_seq = self.seqs[last_ivl_index]
             res.extend(last_seq[:stop_offset])
 
-        return [normalize(it) for it in res]
+        return res
 
     def get_item(self, idx):
         if not (0 <= idx < len(self)):
@@ -279,14 +281,25 @@ class ChainSequence:
 
         ivl_index, offset = self.locate_index(idx)
         seq = self.seqs[ivl_index]
+        # todo: dont normalize, let the client opportunity to interpret the type
         return normalize(seq[offset])
 
     def locate_index(self, idx):
-        for i, interval in enumerate(self.intervals):
-            (a, b) = interval
-            if a <= idx < b:
-                offset = idx - a
-                return i, offset
+        return self._fast_locate(idx)
+
+    def _fast_locate(self, idx):
+        endpoint_index = bisect.bisect_left(self.ends, idx)
+        try:
+            if self.ends[endpoint_index] == idx:
+                ivl_index = endpoint_index + 1
+            else:
+                ivl_index = endpoint_index
+
+            a, b = self.intervals[ivl_index]
+            offset = idx - a
+            return ivl_index, offset
+        except IndexError:
+            return None
 
 
 def data_to_write(ngrams_with_counts):
