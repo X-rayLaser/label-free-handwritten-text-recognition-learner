@@ -9,7 +9,8 @@ from .base import Command
 
 class TranscribeCommand(Command):
     name = 'transcribe'
-    help = 'Recognize a handwritten text on a given word image'
+    help = 'Recognize a handwritten text on a given word image ' \
+           'using a model loaded from the latest checkpoint'
 
     def configure_parser(self, parser):
         parser.add_argument('session_dir', type=str,

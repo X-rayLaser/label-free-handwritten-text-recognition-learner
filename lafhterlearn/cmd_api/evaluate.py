@@ -7,7 +7,8 @@ from .base import Command
 
 class EvaluateCommand(Command):
     name = 'evaluate'
-    help = 'Evaluate a model using a dataset and metrics specified in configuration file'
+    help = 'Evaluate a model using a dataset and metrics specified in configuration file. ' \
+           'The model will be loaded from the latest checkpoint'
 
     def configure_parser(self, parser):
         parser.add_argument('session_dir', type=str,

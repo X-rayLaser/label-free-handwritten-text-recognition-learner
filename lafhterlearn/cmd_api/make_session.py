@@ -25,7 +25,7 @@ class CreateSessionCommand(Command):
 
 def configure_parser(parser):
     parser.add_argument('--config_file', type=str, default='',
-                        help='Location of the configuration file (must be a Python module).')
+                        help='Location of the configuration file. When omitted, default configuration will apply')
 
 
 def run(args):

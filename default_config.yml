@@ -151,11 +151,34 @@ epochs: 50
 # Define the number of epochs for the second phase (synthetic-to-real adaptation)
 tuning_epochs: 50
 
-# Define the word sampler class
+# Define the word sampler class. Available sampler classes are implemented in
+# the lafhterlearn.word_samplers module: UniformSampler, FrequencyBasedSampler, NgramBasedSampler.
+# See readme file for more details on different samplers and their use.
 word_sampler: lafhterlearn.word_samplers.FrequencyBasedSampler
 
-# Define the data consumable by chosen word sampler
+# Define a path to a file containing data consumable by chosen word sampler.
+#
+# UniformSampler expects a plain text file listing words, one per line
+#
+# FrequencyBasedSampler expects a text file in CSV format, where each line contains
+# word and its probability separated by a comma
+#
+# NgramBasedSampler expects a file in HD5 format storing the n-gram model
 sampler_data_file: word_distribution.csv
+
+# Define optional key-word arguments to pass to the sampler class
+# UniformSampler class has no extra arguments
+#
+# FrequencyBasedSampler class has only one key-word argument called sampling_batch_size
+# (for efficiency purposes, the sampler generates a bunch of random values in one bulk operation
+# and puts them in the buffer. In consecutive calls it retrieves them from a buffer until it becomes empty.
+# The parameter defines how many values will be generated in one bulk operation)
+#
+# NgramBasedSampler class has one key-word argument num_words
+# It specifies how many words should contain output text sequence (10 words by default)
+sampler_kwargs:
+  sampling_batch_size: 1024
+
 
 # Define the path to the real image directory
 tuning_data_dir: tuning_data

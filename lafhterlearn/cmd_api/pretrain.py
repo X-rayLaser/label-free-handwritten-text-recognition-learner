@@ -8,7 +8,7 @@ from .base import Command
 
 class PretrainCommand(Command):
     name = 'pretrain'
-    help = 'Start/resume pretraining the model on synthetic data'
+    help = 'Start/resume pretraining of the model on synthetic data'
 
     def configure_parser(self, parser):
         configure_parser(parser)
