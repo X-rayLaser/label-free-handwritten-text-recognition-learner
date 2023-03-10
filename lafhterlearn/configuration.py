@@ -107,6 +107,9 @@ class Configuration:
 
         self.word_sampler = 'lafhterlearn.word_samplers.FrequencyBasedSampler'
         self.sampler_data_file = "word_distribution.csv"
+        self.sampler_kwargs = {
+            'num_words': 10
+        }
 
         self.tuning_data_dir = 'tuning_data'
         self.confidence_threshold = 0.4
