@@ -77,9 +77,9 @@ data_generator_options:
   spaces_range: [ 0, 2 ] # the number of narrow spaces between word letters
 
 # Define the number of synthetic examples to generate per epoch.
-# It is important to remember that examples from previous epoch will not be
+# It is important to remember that examples shown in previous epoch will not be
 # reused in a consecutive ones. Each epoch will work with different synthetic training examples
-# generated on the fly. In fact, the model will not see any image more than once.Thus, epochs are
+# generated on the fly. In fact, the model will not see any image more than once. Thus, epochs are
 # used here only for convenience to help track model performance and save checkpoints.
 training_set_size: 50000
 
