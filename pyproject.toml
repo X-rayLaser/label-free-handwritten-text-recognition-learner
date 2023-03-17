@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lafhterlearn"
-version = "0.6.0"
+version = "0.7.0"
 authors = [
   { name="Evgenii Dolotov", email="supernovaprotocol@gmail.com" },
 ]
@@ -23,8 +23,8 @@ dependencies = [
     "h5py"
 ]
 keywords = [
-    "machine-learning", "deep-learning", "neural-networks", "pytorch",
-    "handwriting-recognition", "handwritten-text-recognition", "ocr"
+    "lafhterlearn", "machine learning", "deep learning", "neural networks", "pytorch",
+    "handwriting recognition", "handwritten text recognition", "ocr"
 ]
 classifiers = [
     "Intended Audience :: Developers",
@@ -44,6 +44,7 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://github.com/X-rayLaser/label-free-handwritten-text-recognition-learner"
+"Documentation" = "https://github.com/X-rayLaser/label-free-handwritten-text-recognition-learner/wiki"
 
 [project.scripts]
 lafhterlearn = "lafhterlearn.cmd_api:execute_command"
